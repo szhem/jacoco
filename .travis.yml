@@ -17,15 +17,15 @@ cache:
     - '$HOME/.m2/repository'
 
 env:
-  - JDK=5
-  - JDK=6
-  - JDK=7
-  - JDK=8
-  - JDK=8
-    ECJ=true
-  - JDK=9
-  - JDK=10
-  - JDK=11-ea
+#  - JDK=5
+#  - JDK=6
+#  - JDK=7
+#  - JDK=8
+#  - JDK=8
+#    ECJ=true
+#  - JDK=9
+#  - JDK=10
+#  - JDK=11-ea
   - JDK=12-ea
 
 script: ./.travis.sh

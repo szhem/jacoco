@@ -64,6 +64,7 @@ case "$JDK" in
   install_jdk $JDK11_EA_URL
   ;;
 12-ea)
+  JDK12_EA_URL="https://download.java.net/java/early_access/jdk12/14/GPL/openjdk-12-ea+14_linux-x64_bin.tar.gz"
   install_jdk $JDK12_EA_URL
   ;;
 esac
@@ -103,6 +104,7 @@ case "$JDK" in
   ;;
 12-ea)
   mvn -V -B -e verify -Dbytecode.version=12 \
+    -Dmaven.javadoc.skip=true \
     --settings=./.travis/settings.xml
   ;;
 *)
