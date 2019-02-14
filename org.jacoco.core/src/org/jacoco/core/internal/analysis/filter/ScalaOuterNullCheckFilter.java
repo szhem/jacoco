@@ -84,7 +84,7 @@ public class ScalaOuterNullCheckFilter extends ScalaFilter {
 	}
 
 	private static class Matcher extends AbstractMatcher {
-		private boolean match(MethodNode methodNode,
+		private boolean match(final MethodNode methodNode,
 				final AbstractInsnNode start) {
 			cursor = start;
 
