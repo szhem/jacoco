@@ -76,19 +76,22 @@ public class ScalaOuterNullCheckFilter extends ScalaFilter {
 		final Matcher matcher = new Matcher();
 		for (AbstractInsnNode i = methodNode.instructions.getFirst();
 				i != null; i = i.getNext()) {
-			matcher.match(methodNode, i, output);
+			if (matcher.match(methodNode, i)) {
+				output.ignore(i, matcher.cursor);
+				break;
+			}
 		}
 	}
 
 	private static class Matcher extends AbstractMatcher {
-		private void match(MethodNode methodNode, final AbstractInsnNode start,
-				final IFilterOutput output) {
+		private boolean match(MethodNode methodNode,
+				final AbstractInsnNode start) {
 			cursor = start;
 
 			nextIs(Opcodes.ALOAD);
 			if (cursor == null
 					|| ((VarInsnNode) cursor).var != OUTER_FIELD_INDEX) {
-				return;
+				return false;
 			}
 
 			String varName = null;
@@ -99,20 +102,19 @@ public class ScalaOuterNullCheckFilter extends ScalaFilter {
 				}
 			}
 			if (!OUTER_FIELD_NAME.equals(varName)) {
-				return;
+				return false;
 			}
 
 			nextIs(Opcodes.IFNONNULL);
 			if (cursor == null) {
-				return;
+				return false;
 			}
 
-			for (AbstractInsnNode i = cursor; i != null; i = i.getNext()) {
-				if (i.getOpcode() == Opcodes.ATHROW) {
-					output.ignore(start, i);
-					break;
-				}
+			while (cursor != null && cursor.getOpcode() != Opcodes.ATHROW) {
+				next();
 			}
+
+			return cursor != null;
 		}
 	}
 
