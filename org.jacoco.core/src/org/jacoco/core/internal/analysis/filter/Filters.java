@@ -11,6 +11,11 @@
  *******************************************************************************/
 package org.jacoco.core.internal.analysis.filter;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.ServiceLoader;
+
 import org.objectweb.asm.tree.MethodNode;
 
 /**
@@ -31,7 +36,8 @@ public final class Filters implements IFilter {
 	 * @return filter that combines all other filters
 	 */
 	public static IFilter all() {
-		return new Filters(new EnumFilter(), new SyntheticFilter(),
+		List<IFilter> filters = new ArrayList<IFilter>(Arrays.asList(
+				new EnumFilter(), new SyntheticFilter(),
 				new SynchronizedFilter(), new TryWithResourcesJavac11Filter(),
 				new TryWithResourcesJavacFilter(),
 				new TryWithResourcesEcjFilter(), new FinallyFilter(),
@@ -44,7 +50,12 @@ public final class Filters implements IFilter {
 				new KotlinUnsafeCastOperatorFilter(),
 				new KotlinNotNullOperatorFilter(),
 				new KotlinDefaultArgumentsFilter(), new KotlinInlineFilter(),
-				new KotlinCoroutineFilter());
+				new KotlinCoroutineFilter()
+		));
+		for (IFilter filter: ServiceLoader.load(IFilter.class)) {
+			filters.add(filter);
+		}
+		return new Filters(filters.toArray(new IFilter[filters.size()]));
 	}
 
 	private Filters(final IFilter... filters) {
