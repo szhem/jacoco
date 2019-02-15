@@ -51,7 +51,7 @@ public class ScalaAccessorFilter extends ScalaFilter {
 
 		final List<Integer> opcodes = new ArrayList<Integer>(instructions.size());
 		for (final Iterator<AbstractInsnNode> iter =
-			 instructions.iterator(); iter.hasNext(); ) {
+				instructions.iterator(); iter.hasNext(); ) {
 			final AbstractInsnNode insn = iter.next();
 			if (!(insn instanceof JumpInsnNode
 					|| insn instanceof LineNumberNode)) {

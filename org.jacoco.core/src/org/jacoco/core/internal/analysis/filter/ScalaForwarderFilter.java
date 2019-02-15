@@ -43,6 +43,8 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class ScalaForwarderFilter extends ScalaFilter {
 
+	private static final String CONSTRUCTOR_NAME = "<init>";
+
 	private static final String LAZY_COMPUTE_SUFFIX = "$lzycompute";
 	private static final String EXTENSION_SUFFIX = "$extension";
 	private static final String CLASS_SUFFIX = "$class";
@@ -56,7 +58,7 @@ public class ScalaForwarderFilter extends ScalaFilter {
 
 		boolean hasJump = false;
 		for (final Iterator<AbstractInsnNode> iter = instructions.iterator();
-			 iter.hasNext() && !hasJump; ) {
+				iter.hasNext() && !hasJump; ) {
 			if (iter.next() instanceof JumpInsnNode) {
 				hasJump = true;
 			}
@@ -64,7 +66,7 @@ public class ScalaForwarderFilter extends ScalaFilter {
 
 		boolean hasForwarderCall = false;
 		for (final Iterator<AbstractInsnNode> iter = instructions.iterator();
-			 iter.hasNext() && !hasForwarderCall; ) {
+				iter.hasNext() && !hasForwarderCall; ) {
 			final AbstractInsnNode insn = iter.next();
 			if (insn instanceof MethodInsnNode) {
 				hasForwarderCall = isScalaForwarder(context.getClassName(),
@@ -102,7 +104,7 @@ public class ScalaForwarderFilter extends ScalaFilter {
 						&& calledMethodName.equals(extensionName);
 		final boolean implicitClassFactory =
 				(opcode == Opcodes.INVOKEVIRTUAL) && callingImplicitClass
-						&& "<init>".equals(calledMethodName);
+						&& CONSTRUCTOR_NAME.equals(calledMethodName);
 		final boolean lazyAccessor = (opcode == Opcodes.INVOKESPECIAL)
 				&& calledMethodName.endsWith(LAZY_COMPUTE_SUFFIX);
 
