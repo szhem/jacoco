@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.jacoco.core.internal.analysis.filter;
 
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -30,25 +29,13 @@ import org.objectweb.asm.tree.MethodNode;
 public class ScalaModuleStaticInitFilter extends ScalaFilter {
 
 	private static final String STATIC_INIT_NAME = "<clinit>";
-	private static final String CONSTRUCTOR_DESC = "()V";
 
 	public void filterInternal(final MethodNode methodNode,
 			final IFilterContext context, final IFilterOutput output) {
-		if (STATIC_INIT_NAME.equals(methodNode.name) && isModuleClass(context)
-				&& new Matcher().match(methodNode, context)) {
+		if (STATIC_INIT_NAME.equals(methodNode.name)
+				&& isModuleClass(context)) {
 			final InsnList instructions = methodNode.instructions;
 			output.ignore(instructions.getFirst(), instructions.getLast());
-		}
-	}
-
-	private static class Matcher extends AbstractMatcher {
-		boolean match(final MethodNode methodNode,
-				final IFilterContext context) {
-			cursor = methodNode.instructions.getFirst();
-			nextIs(Opcodes.NEW);
-			nextIsInvokeSuper(context.getClassName(), CONSTRUCTOR_DESC);
-			nextIs(Opcodes.RETURN);
-			return cursor != null;
 		}
 	}
 

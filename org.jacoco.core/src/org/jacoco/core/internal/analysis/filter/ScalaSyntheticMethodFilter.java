@@ -15,8 +15,10 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.VarInsnNode;
 
 /**
  * Filters synthetic methods of Scala case classes.
@@ -27,6 +29,8 @@ import org.objectweb.asm.tree.MethodNode;
  * <a href="https://github.com/sbt/sbt-jacoco">sbt-jacoco</a> plugin.
  */
 public class ScalaSyntheticMethodFilter extends ScalaFilter {
+
+	private static final String NO_ARGS_DESC = "()V";
 
 	private static final String CASE_COPY_DEFAULT_PREFIX = "copy$default";
 	// case class Main(v:String)
@@ -54,7 +58,8 @@ public class ScalaSyntheticMethodFilter extends ScalaFilter {
 		if (!isOneLiner(methodNode)) {
 			return;
 		}
-		if ((isModuleClass(context) && isSyntheticObjectMethod(methodNode))
+		if ((isModuleClass(context) &&
+				isSyntheticObjectMethod(methodNode, context))
 				|| isSyntheticInstanceMethod(methodNode)) {
 			final InsnList instructions = methodNode.instructions;
 			output.ignore(instructions.getFirst(), instructions.getLast());
@@ -65,8 +70,10 @@ public class ScalaSyntheticMethodFilter extends ScalaFilter {
 		return isCaseInstanceMethod(methodNode);
 	}
 
-	private boolean isSyntheticObjectMethod(final MethodNode methodNode) {
+	private boolean isSyntheticObjectMethod(final MethodNode methodNode,
+			final IFilterContext context) {
 		return isCaseCompanionMethod(methodNode)
+				|| isCaseCompanionConstructor(methodNode, context)
 				|| isAnyValCompanionMethod(methodNode);
 	}
 
@@ -77,6 +84,24 @@ public class ScalaSyntheticMethodFilter extends ScalaFilter {
 
 	private boolean isCaseCompanionMethod(final MethodNode methodNode) {
 		return CASE_COMPANION_METHODS.contains(methodNode.name);
+	}
+
+	private boolean isCaseCompanionConstructor(final MethodNode methodNode,
+			final IFilterContext context) {
+		return new AbstractMatcher() {
+			private boolean match() {
+				firstIsALoad0(methodNode);
+				nextIsInvokeSuper(context.getSuperClassName(),
+						NO_ARGS_DESC);
+				nextIs(Opcodes.ALOAD);
+				if (cursor == null || ((VarInsnNode) cursor).var != 0) {
+					return false;
+				}
+				nextIs(Opcodes.PUTSTATIC);
+				nextIs(Opcodes.RETURN);
+				return cursor != null;
+			}
+		}.match();
 	}
 
 	private boolean isAnyValCompanionMethod(final MethodNode methodNode) {
