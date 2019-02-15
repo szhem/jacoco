@@ -52,7 +52,8 @@ public final class Filters implements IFilter {
 				new KotlinDefaultArgumentsFilter(), new KotlinInlineFilter(),
 				new KotlinCoroutineFilter()
 		));
-		for (IFilter filter: ServiceLoader.load(IFilter.class)) {
+		for (IFilter filter : ServiceLoader.load(
+				IFilter.class, Filters.class.getClassLoader())) {
 			filters.add(filter);
 		}
 		return new Filters(filters.toArray(new IFilter[filters.size()]));
