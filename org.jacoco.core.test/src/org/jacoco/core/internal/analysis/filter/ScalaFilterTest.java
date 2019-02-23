@@ -1,4 +1,309 @@
+/*******************************************************************************
+ * Copyright (c) 2009, 2019 Mountainminds GmbH & Co. KG and Contributors
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Sergey Zhemzhitsky - initial API and implementation
+ *
+ *******************************************************************************/
 package org.jacoco.core.internal.analysis.filter;
 
-public class ScalaFilterTest {
+import org.jacoco.core.internal.instr.InstrSupport;
+import org.junit.Assert;
+import org.junit.Test;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.MethodNode;
+
+public class ScalaFilterTest extends FilterTestBase {
+
+	private final ScalaFilter filter = new ScalaFilter() {
+		void filterInternal(final MethodNode methodNode,
+				final IFilterContext context, final IFilterOutput output) {
+			final InsnList instructions = methodNode.instructions;
+			output.ignore(instructions.getFirst(), instructions.getLast());
+		}
+	};
+
+	@Test
+	public void should_accept_scala_classes_with_signature_annotation() {
+		context.getClassAnnotations()
+				.add(ScalaFilter.SCALA_SIGNATURE_ANNOTATION);
+
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		m.visitInsn(Opcodes.NOP);
+		
+		filter.filter(m, context, output);
+
+		assertMethodIgnored(m);
+	}
+
+	@Test
+	public void should_accept_scala_classes_with_long_signature_annotation() {
+		context.getClassAnnotations()
+				.add(ScalaFilter.SCALA_LONG_SIGNATURE_ANNOTATION);
+
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		m.visitInsn(Opcodes.NOP);
+
+		filter.filter(m, context, output);
+
+		assertMethodIgnored(m);
+	}
+
+	@Test
+	public void should_accept_scala_classes_with_scalasig_attribute() {
+		context.getClassAttributes().add(ScalaFilter.SCALA_SIG_ATTRIBUTE);
+
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		m.visitInsn(Opcodes.NOP);
+
+		filter.filter(m, context, output);
+
+		assertMethodIgnored(m);
+	}
+
+	@Test
+	public void should_accept_scala_classes_with_scala_attribute() {
+		context.getClassAttributes().add(ScalaFilter.SCALA_ATTRIBUTE);
+
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		m.visitInsn(Opcodes.NOP);
+
+		filter.filter(m, context, output);
+
+		assertMethodIgnored(m);
+	}
+
+	@Test
+	public void should_skip_non_scala_methods() {
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		m.visitInsn(Opcodes.NOP);
+
+		filter.filter(m, context, output);
+
+		assertIgnored();
+	}
+
+	@Test
+	public void isScalaClass_should_succeed_on_scala_signature_annotation() {
+		context.getClassAnnotations()
+				.add(ScalaFilter.SCALA_SIGNATURE_ANNOTATION);
+		Assert.assertTrue(ScalaFilter.isScalaClass(context));
+	}
+
+	@Test
+	public void isScalaClass_should_succeed_on_scala_long_signature_annotation() {
+		context.getClassAnnotations()
+				.add(ScalaFilter.SCALA_LONG_SIGNATURE_ANNOTATION);
+		Assert.assertTrue(ScalaFilter.isScalaClass(context));
+	}
+
+	@Test
+	public void isScalaClass_should_succeed_on_scalasig_attribute() {
+		context.getClassAttributes().add(ScalaFilter.SCALA_SIG_ATTRIBUTE);
+		Assert.assertTrue(ScalaFilter.isScalaClass(context));
+	}
+
+	@Test
+	public void isScalaClass_should_succeed_on_scala_attribute() {
+		context.getClassAttributes().add(ScalaFilter.SCALA_ATTRIBUTE);
+		Assert.assertTrue(ScalaFilter.isScalaClass(context));
+	}
+
+	@Test
+	public void isScalaClass_should_not_succeed_on_non_scala_class() {
+		Assert.assertFalse(ScalaFilter.isScalaClass(context));
+	}
+
+	@Test
+	public void isModuleClass_should_succeed_on_module_class() {
+		context.className = "Module$";
+		Assert.assertTrue(ScalaFilter.isModuleClass(context));
+	}
+
+	@Test
+	public void isModuleClass_should_succeed_on_non_module_class() {
+		context.className = "Module";
+		Assert.assertFalse(ScalaFilter.isModuleClass(context));
+	}
+
+	@Test
+	public void findMethod_should_find_method_by_name_and_desc() {
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		context.classMethods.add(m);
+
+		Assert.assertSame(m, ScalaFilter.findMethod(context, "name", "()V"));
+	}
+
+	@Test
+	public void findMethod_should_find_first_method_by_name() {
+		final MethodNode m1 = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		final MethodNode m2 = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "(J)V", null, null);
+		context.classMethods.add(m1);
+		context.classMethods.add(m2);
+
+		Assert.assertSame(m1, ScalaFilter.findMethod(context, "name", null));
+	}
+
+	@Test
+	public void findMethod_should_find_first_method_by_desc() {
+		final MethodNode m1 = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name1", "()V", null, null);
+		final MethodNode m2 = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name2", "()V", null, null);
+		context.classMethods.add(m1);
+		context.classMethods.add(m2);
+
+		Assert.assertSame(m1, ScalaFilter.findMethod(context, "name1", null));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void findMethod_should_return_first_method_on_null_name_and_desc() {
+		ScalaFilter.findMethod(context, null, null);
+	}
+
+	@Test
+	public void findMethod_should_not_find_unknown_method() {
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		context.classMethods.add(m);
+
+		Assert.assertNull(ScalaFilter.findMethod(context, "name1", "()V"));
+	}
+
+	@Test
+	public void isOneLiner_should_succeed_on_single_line_method() {
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		m.visitLineNumber(0, new Label());
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitFieldInsn(Opcodes.GETFIELD, "owner", "name", "I");
+		m.visitLineNumber(0, new Label());
+		m.visitInsn(Opcodes.IRETURN);
+
+		Assert.assertTrue(ScalaFilter.isOneLiner(m));
+	}
+
+	@Test
+	public void isOneLiner_should_not_succeed_on_multi_line_method() {
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		m.visitLineNumber(0, new Label());
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitFieldInsn(Opcodes.GETFIELD, "owner", "name", "I");
+		m.visitLineNumber(2, new Label());
+		m.visitInsn(Opcodes.IRETURN);
+
+		Assert.assertFalse(ScalaFilter.isOneLiner(m));
+	}
+
+	@Test
+	public void isOneLiner_should_not_succeed_on_no_lines() {
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitFieldInsn(Opcodes.GETFIELD, "owner", "name", "I");
+		m.visitInsn(Opcodes.IRETURN);
+
+		Assert.assertFalse(ScalaFilter.isOneLiner(m));
+	}
+
+	@Test
+	public void getLine_should_find_first_line_of_method() {
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		m.visitLineNumber(10, new Label());
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitFieldInsn(Opcodes.GETFIELD, "owner", "name", "I");
+		m.visitLineNumber(12, new Label());
+		m.visitInsn(Opcodes.IRETURN);
+
+		Assert.assertEquals(10, ScalaFilter.getLine(m).line);
+	}
+
+	@Test
+	public void getLine_should_find_nothing_on_no_lines() {
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitFieldInsn(Opcodes.GETFIELD, "owner", "name", "I");
+		m.visitInsn(Opcodes.IRETURN);
+
+		Assert.assertNull(ScalaFilter.getLine(m));
+	}
+
+	@Test
+	public void getLine_should_find_nothing_on_null_method() {
+		Assert.assertNull(ScalaFilter.getLine(null));
+	}
+
+	@Test
+	public void isOnInitLine_should_succeed_when_on_init_line() {
+		final MethodNode init = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				ScalaFilter.INIT_NAME, "()V", null, null);
+		init.visitLineNumber(10, new Label());
+		context.classMethods.add(init);
+
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		m.visitLineNumber(10, new Label());
+
+		Assert.assertTrue(ScalaFilter.isOnInitLine(m, context));
+	}
+
+	@Test
+	public void isOnInitLine_should_not_succeed_when_not_on_init_line() {
+		final MethodNode init = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				ScalaFilter.INIT_NAME, "()V", null, null);
+		init.visitLineNumber(10, new Label());
+		context.classMethods.add(init);
+
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		m.visitLineNumber(12, new Label());
+
+		Assert.assertFalse(ScalaFilter.isOnInitLine(m, context));
+	}
+
+	@Test
+	public void isOnInitLine_should_not_succeed_on_no_method_lines() {
+		final MethodNode init = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				ScalaFilter.INIT_NAME, "()V", null, null);
+		init.visitLineNumber(10, new Label());
+		context.classMethods.add(init);
+
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		m.visitInsn(Opcodes.NOP);
+
+		Assert.assertFalse(ScalaFilter.isOnInitLine(m, context));
+	}
+
+	@Test
+	public void isOnInitLine_should_not_succeed_on_no_init_lines() {
+		final MethodNode init = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				ScalaFilter.INIT_NAME, "()V", null, null);
+		context.classMethods.add(init);
+
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		m.visitLineNumber(10, new Label());
+		m.visitInsn(Opcodes.NOP);
+
+		Assert.assertFalse(ScalaFilter.isOnInitLine(m, context));
+	}
+
 }

@@ -11,8 +11,6 @@
  *******************************************************************************/
 package org.jacoco.core.internal.analysis.filter;
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 
 import org.objectweb.asm.Opcodes;
@@ -112,7 +110,7 @@ public abstract class ScalaFilter implements IFilter {
 		return first != null && last != null && first.line == last.line;
 	}
 
-	static LineNumberNode getMethodLine(final MethodNode methodNode) {
+	static LineNumberNode getLine(final MethodNode methodNode) {
 		if (methodNode == null) {
 			return null;
 		}
@@ -121,13 +119,13 @@ public abstract class ScalaFilter implements IFilter {
 				new AbstractMatcher.TypePredicate(AbstractInsnNode.LINE));
 	}
 
-	static boolean isOnTheConstructorLine(final MethodNode methodNode,
+	static boolean isOnInitLine(final MethodNode methodNode,
 			final IFilterContext context) {
-		final MethodNode constrNode = findMethod(context, INIT_NAME, null);
-		final LineNumberNode methodLine = getMethodLine(methodNode);
-		final LineNumberNode constrLine = getMethodLine(constrNode);
-		return methodLine != null && constrLine != null
-				&& methodLine.line == constrLine.line;
+		final MethodNode initNode = findMethod(context, INIT_NAME, null);
+		final LineNumberNode methodLine = getLine(methodNode);
+		final LineNumberNode initLine = getLine(initNode);
+		return methodLine != null && initLine != null
+				&& methodLine.line == initLine.line;
 	}
 
 }
