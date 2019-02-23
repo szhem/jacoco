@@ -19,6 +19,9 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
+/**
+ * Unit tests for {@link ScalaFilter}.
+ */
 public class ScalaFilterTest extends FilterTestBase {
 
 	private final ScalaFilter filter = new ScalaFilter() {
