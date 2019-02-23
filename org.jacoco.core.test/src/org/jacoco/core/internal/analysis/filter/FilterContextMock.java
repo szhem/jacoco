@@ -11,8 +11,13 @@
  *******************************************************************************/
 package org.jacoco.core.internal.analysis.filter;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.MethodNode;
 
 /**
  * {@link IFilterContext} mock for unit tests.
@@ -22,6 +27,9 @@ public class FilterContextMock implements IFilterContext {
 	public String className = "Foo";
 	public String superClassName = "java/lang/Object";
 	public Set<String> classAnnotations = new HashSet<String>();
+	public Set<String> classAttributes = new HashSet<String>();
+	public List<MethodNode> classMethods = new ArrayList<MethodNode>();
+	public List<FieldNode> classFields = new ArrayList<FieldNode>();
 	public String sourceFileName = "Foo.java";
 	public String sourceDebugExtension;
 
@@ -35,6 +43,18 @@ public class FilterContextMock implements IFilterContext {
 
 	public Set<String> getClassAnnotations() {
 		return classAnnotations;
+	}
+
+	public Set<String> getClassAttributes() {
+		return classAttributes;
+	}
+
+	public List<MethodNode> getClassMethods() {
+		return classMethods;
+	}
+
+	public List<FieldNode> getClassFields() {
+		return classFields;
 	}
 
 	public String getSourceFileName() {
