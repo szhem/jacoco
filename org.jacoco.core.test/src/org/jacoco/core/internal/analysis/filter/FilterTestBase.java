@@ -97,6 +97,13 @@ public abstract class FilterTestBase {
 			}
 			return false;
 		}
+
+		@Override
+		public String toString() {
+			return "[" + fromInclusive.getOpcode() +
+					", " + toInclusive.getOpcode() +
+					']';
+		}
 	}
 
 }
