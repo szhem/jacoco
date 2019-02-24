@@ -281,7 +281,7 @@ public class ScalaLazyAccessorFilter extends ScalaFilter {
 
 			// find instructions to return value of the field just set
 			// and retain just these ones excluding everything else
-			lzyField = (FieldInsnNode) forward(cursor, Opcodes.GETFIELD);
+			lzyField = forward(cursor, Opcodes.GETFIELD);
 			if (lzyField == null
 					|| !methodNode.name.equals(lzyField.name + LAZY_SUFFIX)
 					|| !methodNode.desc.equals("()" + lzyField.desc)) {
