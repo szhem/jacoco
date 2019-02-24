@@ -44,7 +44,8 @@ public final class Filters implements IFilter {
 				new KotlinUnsafeCastOperatorFilter(),
 				new KotlinNotNullOperatorFilter(),
 				new KotlinDefaultArgumentsFilter(), new KotlinInlineFilter(),
-				new KotlinCoroutineFilter(), new ScalaAccessorFilter());
+				new KotlinCoroutineFilter(), new ScalaAccessorFilter(),
+				new ScalaLazyAccessorFilter());
 	}
 
 	private Filters(final IFilter... filters) {
