@@ -16,6 +16,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -130,13 +131,24 @@ public class ScalaFilterTest extends FilterTestBase {
 
 	@Test
 	public void isModuleClass_should_succeed_on_module_class() {
+		final FieldNode f = new FieldNode(InstrSupport.ASM_API_VERSION,
+				Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL,
+				"MODULE$", "LModule$;", null, null);
+		context.classFields.add(f);
 		context.className = "Module$";
+
 		Assert.assertTrue(ScalaFilter.isModuleClass(context));
 	}
 
 	@Test
-	public void isModuleClass_should_succeed_on_non_module_class() {
+	public void isModuleClass_should_not_succeed_on_non_module_class() {
 		context.className = "Module";
+		Assert.assertFalse(ScalaFilter.isModuleClass(context));
+	}
+
+	@Test
+	public void isModuleClass_should_not_succeed_on_absent_module_field() {
+		context.className = "Module$";
 		Assert.assertFalse(ScalaFilter.isModuleClass(context));
 	}
 
@@ -170,7 +182,7 @@ public class ScalaFilterTest extends FilterTestBase {
 		context.classMethods.add(m1);
 		context.classMethods.add(m2);
 
-		Assert.assertSame(m1, ScalaFilter.findMethod(context, "name1", null));
+		Assert.assertSame(m1, ScalaFilter.findMethod(context, null, "()V"));
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -185,6 +197,41 @@ public class ScalaFilterTest extends FilterTestBase {
 		context.classMethods.add(m);
 
 		Assert.assertNull(ScalaFilter.findMethod(context, "name1", "()V"));
+	}
+
+	@Test
+	public void findField_should_find_field_by_name_and_desc() {
+		final FieldNode f = new FieldNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "I", null, null);
+		context.classFields.add(f);
+
+		Assert.assertSame(f, ScalaFilter.findField(context, "name", "I"));
+	}
+
+	@Test
+	public void findField_should_find_first_field_by_desc() {
+		final FieldNode f1 = new FieldNode(InstrSupport.ASM_API_VERSION, 0,
+				"name1", "I", null, null);
+		final FieldNode f2 = new FieldNode(InstrSupport.ASM_API_VERSION, 0,
+				"name2", "I", null, null);
+		context.classFields.add(f1);
+		context.classFields.add(f2);
+
+		Assert.assertSame(f1, ScalaFilter.findField(context, null, "I"));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void findField_should_return_first_field_on_null_name_and_desc() {
+		ScalaFilter.findField(context, null, null);
+	}
+
+	@Test
+	public void findField_should_not_find_unknown_method() {
+		final FieldNode f = new FieldNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "I", null, null);
+		context.classFields.add(f);
+
+		Assert.assertNull(ScalaFilter.findField(context, "name1", "I"));
 	}
 
 	@Test
@@ -307,6 +354,12 @@ public class ScalaFilterTest extends FilterTestBase {
 		m.visitInsn(Opcodes.NOP);
 
 		Assert.assertFalse(ScalaFilter.isOnInitLine(m, context));
+	}
+
+	@Test
+	public void getDesc_should_return_desc_by_class() {
+		String desc = ScalaFilter.getDesc("java/lang/String");
+		Assert.assertEquals("Ljava/lang/String;", desc);
 	}
 
 }

@@ -15,6 +15,7 @@ import java.util.Set;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -53,6 +54,8 @@ public abstract class ScalaFilter implements IFilter {
 	static final String INIT_NAME = "<init>";
 	static final String NO_ARGS_DESC = "()V";
 
+	static final String MODULE_FIELD = "MODULE$";
+
 	static final Integer[] RETURN_OPCODES = {
 			Opcodes.IRETURN, Opcodes.LRETURN, Opcodes.FRETURN,
 			Opcodes.DRETURN, Opcodes.ARETURN, Opcodes.RETURN
@@ -82,7 +85,29 @@ public abstract class ScalaFilter implements IFilter {
 	}
 
 	static boolean isModuleClass(final IFilterContext context) {
-		return context.getClassName().endsWith("$");
+		final String className = context.getClassName();
+		if (!className.endsWith("$")) {
+			return false;
+		}
+		final FieldNode moduleField =
+				findField(context, MODULE_FIELD, getDesc(className));
+		return moduleField != null
+				&& (moduleField.access & Opcodes.ACC_STATIC) != 0;
+	}
+
+	static FieldNode findField(final IFilterContext context,
+			final String name, final String desc) {
+		if (name == null && desc == null) {
+			throw new IllegalArgumentException(
+					"'name' and 'desc' must not be null at the same time");
+		}
+		for (final FieldNode fieldNode : context.getClassFields()) {
+			if ((name == null || name.equals(fieldNode.name))
+					&& (desc == null || desc.equals(fieldNode.desc))) {
+				return fieldNode;
+			}
+		}
+		return null;
 	}
 
 	static MethodNode findMethod(final IFilterContext context,
@@ -91,7 +116,7 @@ public abstract class ScalaFilter implements IFilter {
 			throw new IllegalArgumentException(
 					"'name' and 'desc' must not be null at the same time");
 		}
-		for (final MethodNode methodNode: context.getClassMethods()) {
+		for (final MethodNode methodNode : context.getClassMethods()) {
 			if ((name == null || name.equals(methodNode.name))
 					&& (desc == null || desc.equals(methodNode.desc))) {
 				return methodNode;
@@ -126,6 +151,10 @@ public abstract class ScalaFilter implements IFilter {
 		final LineNumberNode initLine = getLine(initNode);
 		return methodLine != null && initLine != null
 				&& methodLine.line == initLine.line;
+	}
+
+	static String getDesc(final String className) {
+		return 'L' + className + ';';
 	}
 
 }
