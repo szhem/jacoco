@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.jacoco.core.internal.analysis.filter;
 
+import java.util.List;
+
 import org.jacoco.core.internal.instr.InstrSupport;
 import org.junit.Assert;
 import org.junit.Test;
@@ -200,6 +202,36 @@ public class ScalaFilterTest extends FilterTestBase {
 	}
 
 	@Test
+	public void findMethods_should_find_all_methods_by_name() {
+		final MethodNode m1 = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+		final MethodNode m2 = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "(J)V", null, null);
+		context.classMethods.add(m1);
+		context.classMethods.add(m2);
+
+		final List<MethodNode> methodNodes =
+				ScalaFilter.findMethods(context, "name", null);
+		Assert.assertSame(m1, methodNodes.get(0));
+		Assert.assertSame(m2, methodNodes.get(1));
+	}
+
+	@Test
+	public void findMethods_should_find_all_methods_by_desc() {
+		final MethodNode m1 = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name1", "()V", null, null);
+		final MethodNode m2 = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name2", "()V", null, null);
+		context.classMethods.add(m1);
+		context.classMethods.add(m2);
+
+		final List<MethodNode> methodNodes =
+				ScalaFilter.findMethods(context, null, "()V");
+		Assert.assertSame(m1, methodNodes.get(0));
+		Assert.assertSame(m2, methodNodes.get(1));
+	}
+
+	@Test
 	public void findField_should_find_field_by_name_and_desc() {
 		final FieldNode f = new FieldNode(InstrSupport.ASM_API_VERSION, 0,
 				"name", "I", null, null);
@@ -232,6 +264,21 @@ public class ScalaFilterTest extends FilterTestBase {
 		context.classFields.add(f);
 
 		Assert.assertNull(ScalaFilter.findField(context, "name1", "I"));
+	}
+
+	@Test
+	public void findFields_should_find_all_fields_by_desc() {
+		final FieldNode f1 = new FieldNode(InstrSupport.ASM_API_VERSION, 0,
+				"name1", "I", null, null);
+		final FieldNode f2 = new FieldNode(InstrSupport.ASM_API_VERSION, 0,
+				"name2", "I", null, null);
+		context.classFields.add(f1);
+		context.classFields.add(f2);
+
+		final List<FieldNode> fieldNodes =
+				ScalaFilter.findFields(context, null, "I");
+		Assert.assertSame(f1, fieldNodes.get(0));
+		Assert.assertSame(f2, fieldNodes.get(1));
 	}
 
 	@Test

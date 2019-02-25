@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.jacoco.core.internal.analysis.filter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import org.objectweb.asm.Opcodes;
@@ -97,32 +99,46 @@ public abstract class ScalaFilter implements IFilter {
 
 	static FieldNode findField(final IFilterContext context,
 			final String name, final String desc) {
-		if (name == null && desc == null) {
-			throw new IllegalArgumentException(
-					"'name' and 'desc' must not be null at the same time");
-		}
-		for (final FieldNode fieldNode : context.getClassFields()) {
-			if ((name == null || name.equals(fieldNode.name))
-					&& (desc == null || desc.equals(fieldNode.desc))) {
-				return fieldNode;
-			}
-		}
-		return null;
+		final List<FieldNode> fieldNodes = findFields(context, name, desc);
+		return fieldNodes.isEmpty() ? null : fieldNodes.get(0);
 	}
 
-	static MethodNode findMethod(final IFilterContext context,
+	static List<FieldNode> findFields(final IFilterContext context,
 			final String name, final String desc) {
 		if (name == null && desc == null) {
 			throw new IllegalArgumentException(
 					"'name' and 'desc' must not be null at the same time");
 		}
+		final List<FieldNode> fieldNodes = new ArrayList<FieldNode>();
+		for (final FieldNode fieldNode : context.getClassFields()) {
+			if ((name == null || name.equals(fieldNode.name))
+					&& (desc == null || desc.equals(fieldNode.desc))) {
+				fieldNodes.add(fieldNode);
+			}
+		}
+		return fieldNodes;
+	}
+
+	static MethodNode findMethod(final IFilterContext context,
+			final String name, final String desc) {
+		final List<MethodNode> methodNodes = findMethods(context, name, desc);
+		return methodNodes.isEmpty() ? null : methodNodes.get(0);
+	}
+
+	static List<MethodNode> findMethods(final IFilterContext context,
+			final String name, final String desc) {
+		if (name == null && desc == null) {
+			throw new IllegalArgumentException(
+					"'name' and 'desc' must not be null at the same time");
+		}
+		final List<MethodNode> methodNodes = new ArrayList<MethodNode>();
 		for (final MethodNode methodNode : context.getClassMethods()) {
 			if ((name == null || name.equals(methodNode.name))
 					&& (desc == null || desc.equals(methodNode.desc))) {
-				return methodNode;
+				methodNodes.add(methodNode);
 			}
 		}
-		return null;
+		return methodNodes;
 	}
 
 	static boolean isOneLiner(final MethodNode methodNode) {
@@ -146,11 +162,17 @@ public abstract class ScalaFilter implements IFilter {
 
 	static boolean isOnInitLine(final MethodNode methodNode,
 			final IFilterContext context) {
-		final MethodNode initNode = findMethod(context, INIT_NAME, null);
 		final LineNumberNode methodLine = getLine(methodNode);
-		final LineNumberNode initLine = getLine(initNode);
-		return methodLine != null && initLine != null
-				&& methodLine.line == initLine.line;
+		if (methodLine == null) {
+			return false;
+		}
+		for (MethodNode initNode : findMethods(context, INIT_NAME, null)) {
+			final LineNumberNode initLine = getLine(initNode);
+			if (initLine != null && methodLine.line == initLine.line) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	static String getDesc(final String className) {
