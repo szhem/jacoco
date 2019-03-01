@@ -11,12 +11,8 @@
  *******************************************************************************/
 package org.jacoco.core.test.validation.scala;
 
-import org.jacoco.core.test.validation.Source.Line;
 import org.jacoco.core.test.validation.ValidationTestBase;
 import org.jacoco.core.test.validation.scala.targets.ScalaCaseClassTarget;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Test of scala case classes.
