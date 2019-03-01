@@ -101,6 +101,16 @@ public class ScalaFilterTest extends FilterTestBase {
 	}
 
 	@Test
+	public void should_skip_empty_methods() {
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"name", "()V", null, null);
+
+		filter.filter(m, context, output);
+
+		assertIgnored();
+	}
+
+	@Test
 	public void isScalaClass_should_succeed_on_scala_signature_annotation() {
 		context.getClassAnnotations()
 				.add(ScalaFilter.SCALA_SIGNATURE_ANNOTATION);
