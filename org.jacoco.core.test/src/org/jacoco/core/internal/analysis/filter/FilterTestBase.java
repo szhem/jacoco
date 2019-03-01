@@ -19,6 +19,7 @@ import static org.junit.Assert.fail;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,7 +34,7 @@ public abstract class FilterTestBase {
 
 	protected final FilterContextMock context = new FilterContextMock();
 
-	private final List<Range> ignoredRanges = new ArrayList<Range>();
+	private final Set<Range> ignoredRanges = new HashSet<Range>();
 
 	private final Map<AbstractInsnNode, Set<AbstractInsnNode>> replacedBranches = new HashMap<AbstractInsnNode, Set<AbstractInsnNode>>();
 
@@ -96,6 +97,13 @@ public abstract class FilterTestBase {
 						&& this.toInclusive.equals(other.toInclusive);
 			}
 			return false;
+		}
+
+		@Override
+		public int hashCode() {
+			int result = fromInclusive.hashCode();
+			result = 31 * result + toInclusive.hashCode();
+			return result;
 		}
 
 		@Override
