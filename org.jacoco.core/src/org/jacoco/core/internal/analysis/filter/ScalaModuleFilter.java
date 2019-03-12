@@ -26,6 +26,8 @@ public class ScalaModuleFilter extends ScalaFilter {
 		if (!isModuleClass(context)) {
 			return;
 		}
+		new StaticInitFilter().ignoreMatches(methodNode, context, output);
+		new InitFilter().ignoreMatches(methodNode, context, output);
 		new ReadResolveMatcher().ignoreMatches(methodNode, context, output);
 	}
 
@@ -77,6 +79,67 @@ public class ScalaModuleFilter extends ScalaFilter {
 			nextIs(Opcodes.ARETURN);
 
 			if (cursor != null) {
+				output.ignore(instructions.getFirst(), instructions.getLast());
+			}
+		}
+	}
+
+	/**
+	 * <pre>{@code
+	 * object Main
+	 * }</pre>
+	 *
+	 * <pre>{@code
+	 * public static {};
+	 *   descriptor: ()V
+	 *   flags: ACC_PUBLIC, ACC_STATIC
+	 *   Code:
+	 *     stack=1, locals=0, args_size=0
+	 *        0: new           #2  // class Main$
+	 *        3: invokespecial #15 // Method "<init>":()V
+	 *        6: return
+	 * }</pre>
+	 */
+	private static class StaticInitFilter extends AbstractMatcher {
+		void ignoreMatches(final MethodNode methodNode,
+				final IFilterContext context, final IFilterOutput output) {
+			if ("clinit".equals(methodNode.name)
+					&& "()V".equals(methodNode.desc)) {
+				final InsnList instructions = methodNode.instructions;
+				output.ignore(instructions.getFirst(), instructions.getLast());
+			}
+		}
+	}
+
+	/**
+	 * <pre>{@code
+	 * object Main
+	 * }</pre>
+	 *
+	 * <pre>{@code
+	 * public Main$();
+	 *   descriptor: ()V
+	 *   flags: ACC_PUBLIC
+	 *   Code:
+	 *     stack=1, locals=1, args_size=1
+	 *        0: aload_0
+	 *        1: invokespecial #13 // Method java/lang/Object."<init>":()V
+	 *        4: aload_0
+	 *        5: putstatic     #15 // Field MODULE$:LMain$;
+	 *        8: return
+	 *     LocalVariableTable:
+	 *       Start  Length  Slot  Name   Signature
+	 *           0       9     0  this   LMain$;
+	 *     LineNumberTable:
+	 *       line 10: 0
+	 * }</pre>
+	 */
+	private static class InitFilter extends AbstractMatcher {
+		void ignoreMatches(final MethodNode methodNode,
+				final IFilterContext context, final IFilterOutput output) {
+			if ("init".equals(methodNode.name)
+					&& "()V".equals(methodNode.desc)) {
+				final InsnList instructions = methodNode.instructions;
 				output.ignore(instructions.getFirst(), instructions.getLast());
 			}
 		}
