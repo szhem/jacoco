@@ -188,7 +188,45 @@ public class ScalaCaseClassFilter extends ScalaFilter {
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
 			// generated methods are expected to be on the constructor's line
-			if (!isModuleClass(context) || !isOnInitLine(methodNode, context)) {
+			// some extension methods do not contain line debug info, so
+			// don't check if it's on the constructor's line
+			// e.g. for the following class
+			//
+			// case class Main(foo:String) extends AnyVal
+			//
+			// for some methods the following byte code (without) line numbers
+			// debug info is generated ...
+			//
+			// public final java.lang.String copy$default$1$extension(java.lang.String);
+			//   descriptor: (Ljava/lang/String;)Ljava/lang/String;
+			//   flags: ACC_PUBLIC, ACC_FINAL
+			//   Code:
+			//     stack=1, locals=2, args_size=2
+			//        0: aload_1
+			//        1: areturn
+			//     LocalVariableTable:
+			//       Start  Length  Slot  Name   Signature
+			//           0       2     0  this   LMain$;
+			//           0       2     1 $this   Ljava/lang/String;
+			//
+			// ... although the main constructor contains such intormation
+			//
+			// public Main$();
+			//   descriptor: ()V
+			//   flags: ACC_PUBLIC
+			//   Code:
+			//     stack=1, locals=1, args_size=1
+			//        0: aload_0
+			//        1: invokespecial #110 // Method scala/runtime/AbstractFunction1."<init>":()V
+			//        4: aload_0
+			//        5: putstatic     #48  // Field MODULE$:LMain$;
+			//        8: return
+			//     LocalVariableTable:
+			//       Start  Length  Slot  Name   Signature
+			//           0       9     0  this   LMain$;
+			//     LineNumberTable:
+			//       line 6: 0
+			if (!isModuleClass(context)) {
 				return;
 			}
 
@@ -198,6 +236,5 @@ public class ScalaCaseClassFilter extends ScalaFilter {
 			}
 		}
 	}
-
 
 }
