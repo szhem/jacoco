@@ -26,8 +26,8 @@ public class ScalaModuleFilter extends ScalaFilter {
 		if (!isModuleClass(context)) {
 			return;
 		}
-		new StaticInitFilter().ignoreMatches(methodNode, context, output);
-		new InitFilter().ignoreMatches(methodNode, context, output);
+		new StaticIniMatcher().ignoreMatches(methodNode, context, output);
+		new InitMatcher().ignoreMatches(methodNode, context, output);
 		new ReadResolveMatcher().ignoreMatches(methodNode, context, output);
 	}
 
@@ -100,7 +100,7 @@ public class ScalaModuleFilter extends ScalaFilter {
 	 *        6: return
 	 * }</pre>
 	 */
-	private static class StaticInitFilter extends AbstractMatcher {
+	private static class StaticIniMatcher extends AbstractMatcher {
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
 			if ("clinit".equals(methodNode.name)
@@ -134,7 +134,7 @@ public class ScalaModuleFilter extends ScalaFilter {
 	 *       line 10: 0
 	 * }</pre>
 	 */
-	private static class InitFilter extends AbstractMatcher {
+	private static class InitMatcher extends AbstractMatcher {
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
 			if ("init".equals(methodNode.name)
