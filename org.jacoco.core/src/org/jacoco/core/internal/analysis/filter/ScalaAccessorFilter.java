@@ -82,7 +82,7 @@ public class ScalaAccessorFilter extends ScalaFilter {
 				return false;
 			}
 
-			cursor = AbstractMatcher.forward(cursor, RETURN_OPCODES);
+			cursor = forward(cursor, RETURN_OPCODES);
 			return cursor != null;
 		}
 	}
