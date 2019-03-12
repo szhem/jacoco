@@ -18,7 +18,6 @@ import java.util.Set;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodNode;
 
