@@ -131,7 +131,7 @@ public class ScalaLazyAccessorFilter extends ScalaFilter {
 			}
 
 			// find return statement
-			cursor = AbstractMatcher.forward(cursor, RETURN_OPCODES);
+			cursor = forward(cursor, RETURN_OPCODES);
 			if (cursor != null) {
 				InsnList instructions = methodNode.instructions;
 				output.ignore(instructions.getFirst(), instructions.getLast());
