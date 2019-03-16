@@ -29,6 +29,8 @@ public class ScalaModuleFilter extends ScalaFilter {
 		new StaticInitMatcher().ignoreMatches(methodNode, context, output);
 		new InitMatcher().ignoreMatches(methodNode, context, output);
 		new ReadResolveMatcher().ignoreMatches(methodNode, context, output);
+		new ExtensionMethodMatcher().ignoreMatches(methodNode, context, output);
+
 	}
 
 	/**
@@ -139,6 +141,44 @@ public class ScalaModuleFilter extends ScalaFilter {
 				final IFilterContext context, final IFilterOutput output) {
 			if ("init".equals(methodNode.name)
 					&& "()V".equals(methodNode.desc)) {
+				final InsnList instructions = methodNode.instructions;
+				output.ignore(instructions.getFirst(), instructions.getLast());
+			}
+		}
+	}
+
+	/**
+	 * Filters Scala methods of value class companion objects.
+	 *
+	 * Consider the following example:
+	 *
+	 * <pre>{@code
+	 * object Main
+	 * class Main(val v:String) extends AnyVal {
+	 *   def foo: String = v
+	 * }
+	 * }</pre>
+	 * ... that has a companion object compiled into the following byte code:
+	 * <pre>{@code
+	 * public final class Main$ {
+	 *   public static final Main$ MODULE$;
+	 *   public static {};
+	 *   public final java.lang.String foo$extension(java.lang.String);
+	 *   public final int hashCode$extension(java.lang.String);
+	 *   public final boolean equals$extension(java.lang.String, java.lang.Object);
+	 *   private Main$();
+	 * }
+	 * }</pre>
+	 * This matcher tries to exclude all the synthetically-generated extension
+	 * methods.
+	 */
+	private static class ExtensionMethodMatcher extends AbstractMatcher {
+
+		private static final String EXTENSION_METHOD_SUFFIX = "$extension";
+
+		void ignoreMatches(final MethodNode methodNode,
+				final IFilterContext context, final IFilterOutput output) {
+			if (methodNode.name.endsWith(EXTENSION_METHOD_SUFFIX)) {
 				final InsnList instructions = methodNode.instructions;
 				output.ignore(instructions.getFirst(), instructions.getLast());
 			}

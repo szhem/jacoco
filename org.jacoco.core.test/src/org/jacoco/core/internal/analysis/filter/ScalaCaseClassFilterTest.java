@@ -280,21 +280,6 @@ public class ScalaCaseClassFilterTest extends FilterTestBase {
 		assertMethodIgnored(m);
 	}
 
-	@Test
-	public void should_filter_anyval_companion_extension_methods() {
-		setUpModuleClass();
-
-		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
-				"toString$extension", "(Ljava/lang/String;)Ljava/lang/String;",
-				null, null);
-		m.visitLineNumber(10, new Label());
-		m.visitInsn(Opcodes.ARETURN);
-
-		filter.filter(m, context, output);
-
-		assertMethodIgnored(m);
-	}
-
 	private void setUpModuleClass() {
 		context.className = "Main$";
 		final FieldNode f = new FieldNode(InstrSupport.ASM_API_VERSION,

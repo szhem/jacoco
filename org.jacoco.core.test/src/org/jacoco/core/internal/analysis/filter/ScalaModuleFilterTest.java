@@ -49,4 +49,17 @@ public class ScalaModuleFilterTest extends FilterTestBase {
 		assertMethodIgnored(m);
 	}
 
+	@Test
+	public void should_filter_anyval_companion_extension_methods() {
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"foo$extension", "(Ljava/lang/String;)Ljava/lang/String;",
+				null, null);
+		m.visitVarInsn(Opcodes.ALOAD, 1);
+		m.visitInsn(Opcodes.ARETURN);
+
+		filter.filter(m, context, output);
+
+		assertMethodIgnored(m);
+	}
+
 }
