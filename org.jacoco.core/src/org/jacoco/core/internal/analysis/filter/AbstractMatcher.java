@@ -166,6 +166,46 @@ abstract class AbstractMatcher {
 	}
 
 	/**
+	 * Returns first instruction preceding a given one that matches one of the
+	 * provided opcodes.
+	 */
+	final <T extends AbstractInsnNode> T backward(final Integer... opcodes) {
+		T insn = backward(cursor, opcodes);
+		cursor = insn;
+		return insn;
+	}
+
+	/**
+	 * Returns first instruction following a given one that matches one of the
+	 * provided opcodes.
+	 */
+	final <T extends AbstractInsnNode> T forward(final Integer... opcodes) {
+		T insn = forward(cursor, opcodes);
+		cursor = insn;
+		return insn;
+	}
+
+	/**
+	 * Returns first instruction preceding a given one that matches a provided
+	 * predicate.
+	 */
+	final <T extends AbstractInsnNode> T backward(final Predicate predicate) {
+		T insn = backward(cursor, predicate);
+		cursor = insn;
+		return insn;
+	}
+
+	/**
+	 * Returns first instruction following a given one that matches a provided
+	 * predicate.
+	 */
+	final <T extends AbstractInsnNode> T forward(final Predicate predicate) {
+		T insn = forward(cursor, predicate);
+		cursor = insn;
+		return insn;
+	}
+
+	/**
 	 * Returns first instruction from given and following it that is not
 	 * {@link AbstractInsnNode#FRAME}, {@link AbstractInsnNode#LABEL},
 	 * {@link AbstractInsnNode#LINE}.

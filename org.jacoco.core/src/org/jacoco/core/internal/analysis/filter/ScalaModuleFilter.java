@@ -11,6 +11,10 @@
  *******************************************************************************/
 package org.jacoco.core.internal.analysis.filter;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
@@ -26,11 +30,9 @@ public class ScalaModuleFilter extends ScalaFilter {
 		if (!isModuleClass(context)) {
 			return;
 		}
-		new StaticInitMatcher().ignoreMatches(methodNode, context, output);
 		new InitMatcher().ignoreMatches(methodNode, context, output);
 		new ReadResolveMatcher().ignoreMatches(methodNode, context, output);
 		new ExtensionMethodMatcher().ignoreMatches(methodNode, context, output);
-
 	}
 
 	/**
@@ -87,33 +89,9 @@ public class ScalaModuleFilter extends ScalaFilter {
 	}
 
 	/**
-	 * <pre>{@code
-	 * object Main
-	 * }</pre>
+	 * May be useful to filter generated but not used companion objects
+	 *  of case- and value- classes.
 	 *
-	 * <pre>{@code
-	 * public static {};
-	 *   descriptor: ()V
-	 *   flags: ACC_PUBLIC, ACC_STATIC
-	 *   Code:
-	 *     stack=1, locals=0, args_size=0
-	 *        0: new           #2  // class Main$
-	 *        3: invokespecial #15 // Method "<init>":()V
-	 *        6: return
-	 * }</pre>
-	 */
-	private static class StaticInitMatcher extends AbstractMatcher {
-		void ignoreMatches(final MethodNode methodNode,
-				final IFilterContext context, final IFilterOutput output) {
-			if ("clinit".equals(methodNode.name)
-					&& "()V".equals(methodNode.desc)) {
-				final InsnList instructions = methodNode.instructions;
-				output.ignore(instructions.getFirst(), instructions.getLast());
-			}
-		}
-	}
-
-	/**
 	 * <pre>{@code
 	 * object Main
 	 * }</pre>
@@ -174,11 +152,31 @@ public class ScalaModuleFilter extends ScalaFilter {
 	 */
 	private static class ExtensionMethodMatcher extends AbstractMatcher {
 
+		private static final Set<String> CASE_COMPANION_METHODS =
+				new HashSet<String>(Arrays.asList(
+						"productArity", "productElement", "productPrefix",
+						"productIterator", "copy", "canEqual", "equals",
+						"hashCode", "toString"
+				));
+
 		private static final String EXTENSION_METHOD_SUFFIX = "$extension";
 
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
-			if (methodNode.name.endsWith(EXTENSION_METHOD_SUFFIX)) {
+			final String methodName = methodNode.name;
+			final int sepPos = methodName.indexOf('$');
+			if (sepPos == -1) {
+				return;
+			}
+
+			final String prefix = methodName.substring(0, sepPos);
+			final String suffix = methodName.substring(sepPos);
+
+			if (!EXTENSION_METHOD_SUFFIX.equals(suffix)) {
+				return;
+			}
+
+			if (CASE_COMPANION_METHODS.contains(prefix)) {
 				final InsnList instructions = methodNode.instructions;
 				output.ignore(instructions.getFirst(), instructions.getLast());
 			}

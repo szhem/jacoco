@@ -12,6 +12,7 @@
 package org.jacoco.core.internal.analysis.filter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -62,6 +63,9 @@ public abstract class ScalaFilter implements IFilter {
 			Opcodes.IRETURN, Opcodes.LRETURN, Opcodes.FRETURN,
 			Opcodes.DRETURN, Opcodes.ARETURN, Opcodes.RETURN
 	};
+	static {
+		Arrays.sort(RETURN_OPCODES);
+	}
 
 	public final void filter(final MethodNode methodNode,
 			final IFilterContext context, final IFilterOutput output) {
