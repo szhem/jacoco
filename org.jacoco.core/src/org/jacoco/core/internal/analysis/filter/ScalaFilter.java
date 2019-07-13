@@ -58,6 +58,7 @@ public abstract class ScalaFilter implements IFilter {
 	static final String NO_ARGS_DESC = "()V";
 
 	static final String MODULE_FIELD = "MODULE$";
+	static final String EXTENSION_METHOD_SUFFIX = "$extension";
 
 	static final Integer[] RETURN_OPCODES = {
 			Opcodes.IRETURN, Opcodes.LRETURN, Opcodes.FRETURN,

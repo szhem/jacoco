@@ -46,7 +46,8 @@ public final class Filters implements IFilter {
 				new KotlinDefaultArgumentsFilter(), new KotlinInlineFilter(),
 				new KotlinCoroutineFilter(), new ScalaAccessorFilter(),
 				new ScalaLazyAccessorFilter(), new ScalaModuleFilter(),
-				new ScalaCaseClassFilter(), new ScalaForwarderFilter());
+				new ScalaCaseClassFilter(), new ScalaForwarderFilter(),
+				new ScalaValueClassFilter());
 	}
 
 	private Filters(final IFilter... filters) {

@@ -159,8 +159,6 @@ public class ScalaModuleFilter extends ScalaFilter {
 						"hashCode", "toString"
 				));
 
-		private static final String EXTENSION_METHOD_SUFFIX = "$extension";
-
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
 			final String methodName = methodNode.name;
