@@ -22,5 +22,18 @@ object ScalaSuspiciousTarget {
   def main(args: Array[String]): Unit = {
     Foo("bar")
     Foo
+
+    new ScalaSuspiciousTarget().foo()
+  }
+}
+
+class ScalaSuspiciousTarget {
+  val delegate = Iterator(1,2,3)
+  val iter = new Iterator[Int] { // assertFullyCovered()
+    def hasNext: Boolean = delegate.hasNext
+    def next(): Int = delegate.next()
+  }
+  def foo(): Unit = {
+    if (iter.hasNext) iter.next()
   }
 }

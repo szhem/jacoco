@@ -12,9 +12,13 @@
 
 package org.jacoco.core.internal.analysis.filter;
 
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.VarInsnNode;
 
 /**
  * Detects Scala generated methods which cannot be classified and filtered by
@@ -24,7 +28,9 @@ public class ScalaSuspiciousFilter extends ScalaFilter {
 
 	public void filterInternal(final MethodNode methodNode,
 			final IFilterContext context, final IFilterOutput output) {
-		new NoLineInfoMethodsMatcher().ignoreMatches(methodNode, context, output);
+		new NoLineInfoMethodsMatcher()
+				.ignoreMatches(methodNode, context, output);
+		new OuterNullCheckFilter().ignoreMatches(methodNode, context, output);
 	}
 
 	/**
@@ -105,6 +111,93 @@ public class ScalaSuspiciousFilter extends ScalaFilter {
 					return;
 				}
 			}
+		}
+	}
+
+	/**
+	 * Filters redundant checks of outer classes for null pointer in case of
+	 * inner classes' constructors.
+	 * <p>
+	 * Consider the {@code wrapper} variable initialized with the subclass of
+	 * {@code Iterator} in the snippet below:
+	 * </p>
+	 * <pre>{@code
+	 * class Main {
+	 *   val delegate = Iterator(1,2,3)
+	 *   val wrapper = new Iterator[Int] {
+	 *     def hasNext: Boolean = delegate.hasNext
+	 *     def next(): Int = delegate.next()
+	 *   }
+	 * }
+	 * }</pre>
+	 * ... iterator's constructor is translated into the following
+	 * byte code:
+	 * <pre>{@code
+	 * public Main$$anon$1(Main);
+	 *   descriptor: (LMain;)V
+	 *   flags: ACC_PUBLIC
+	 *   Code:
+	 *     stack=2, locals=2, args_size=2
+	 *        0: aload_1
+	 *        1: ifnonnull     12
+	 *        4: new           #485 // class NullPointerException
+	 *        7: dup
+	 *        8: invokespecial #486 // java/lang/NullPointerException."<init>":()V
+	 *        11: athrow
+	 *        ...
+	 *        33: return
+	 *     LocalVariableTable:
+	 *       Start  Length  Slot  Name   Signature
+	 *           0      34     0  this   LMain$$anon$1;
+	 *           0      34     1 $outer   LMain;
+	 *     LineNumberTable:
+	 *       line 4: 0
+	 *     StackMapTable: number_of_entries = 1
+	 *       frame_type = 12
+	 * }</pre>
+	 * ... which contains unnecessary checks of {@code $outer} field (that
+	 * references an instance of the outer {@code Main} class) for null pointer.
+	 */
+	private static class OuterNullCheckFilter extends AbstractMatcher {
+
+		private static final String OUTER_FIELD_NAME = "$outer";
+		private static final int OUTER_FIELD_INDEX = 1;
+
+		void ignoreMatches(final MethodNode methodNode,
+				final IFilterContext context, final IFilterOutput output) {
+			final InsnList instructions = methodNode.instructions;
+			cursor = instructions.getFirst();
+
+			if (!INIT_NAME.equals(methodNode.name)) {
+				return;
+			}
+
+			VarInsnNode varInsnNode = forward(Opcodes.ALOAD);
+			if (varInsnNode == null || varInsnNode.var != OUTER_FIELD_INDEX) {
+				return;
+			}
+
+			AbstractInsnNode from = cursor;
+
+			nextIs(Opcodes.IFNONNULL);
+			nextIs(Opcodes.ACONST_NULL);
+			nextIs(Opcodes.ATHROW);
+			if (cursor == null) {
+				return;
+			}
+
+			AbstractInsnNode to = cursor;
+
+			final FieldInsnNode field = forward(Opcodes.PUTFIELD);
+			if (field == null || !OUTER_FIELD_NAME.equals(field.name)) {
+				return;
+			}
+
+			if (forward(Opcodes.RETURN) == null) {
+				return;
+			}
+
+			output.ignore(from, to);
 		}
 	}
 
