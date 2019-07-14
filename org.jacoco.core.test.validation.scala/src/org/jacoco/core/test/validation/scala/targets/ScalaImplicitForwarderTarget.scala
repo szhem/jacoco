@@ -16,7 +16,7 @@ import org.jacoco.core.test.validation.targets.Stubs.nop
 /**
   * Test target for scala forwarder methods.
   */
-object ScalaImplicitForwarderTarget { // assertFullyCovered()
+object ScalaImplicitForwarderTarget { // assertEmpty()
 
   implicit class Bar(target: ScalaImplicitForwarderTarget) { // assertFullyCovered()
     def baz(): Unit = nop() // assertFullyCovered()

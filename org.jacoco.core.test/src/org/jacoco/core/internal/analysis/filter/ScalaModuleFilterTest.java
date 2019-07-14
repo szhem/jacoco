@@ -62,4 +62,21 @@ public class ScalaModuleFilterTest extends FilterTestBase {
 		assertMethodIgnored(m);
 	}
 
+	@Test
+	public void should_filter_simple_constructors() {
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"<init>", "()V", null, null);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitMethodInsn(Opcodes.INVOKESPECIAL,
+				"scala/runtime/AbstractFunction1", "<init>", "()V", false);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitFieldInsn(Opcodes.PUTSTATIC, context.className, "MODULE$",
+				"L" + context.className + ";");
+		m.visitInsn(Opcodes.RETURN);
+
+		filter.filter(m, context, output);
+
+		assertMethodIgnored(m);
+	}
+
 }

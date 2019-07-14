@@ -30,7 +30,8 @@ public class ScalaModuleFilter extends ScalaFilter {
 		if (!isModuleClass(context)) {
 			return;
 		}
-		new InitMatcher().ignoreMatches(methodNode, context, output);
+		new SimpleConstructorMatcher()
+				.ignoreMatches(methodNode, context, output);
 		new ReadResolveMatcher().ignoreMatches(methodNode, context, output);
 		new ExtensionMethodMatcher().ignoreMatches(methodNode, context, output);
 	}
@@ -89,37 +90,80 @@ public class ScalaModuleFilter extends ScalaFilter {
 	}
 
 	/**
-	 * May be useful to filter generated but not used companion objects
-	 *  of case- and value- classes.
+	 * May be useful to filter generated but not used companion objects of
+	 * case-classes as an 'apply' method of the companion object is not
+	 * necessarily called when instantiating a case class.
 	 *
 	 * <pre>{@code
-	 * object Main
+	 * case class Foo(foo: String)
+	 * object Main {
+	 *   def main(args: Array[String]): Unit = {
+	 *     Foo("foo")
+	 *   }
 	 * }</pre>
 	 *
 	 * <pre>{@code
-	 * public Main$();
-	 *   descriptor: ()V
-	 *   flags: ACC_PUBLIC
-	 *   Code:
-	 *     stack=1, locals=1, args_size=1
-	 *        0: aload_0
-	 *        1: invokespecial #13 // Method java/lang/Object."<init>":()V
-	 *        4: aload_0
-	 *        5: putstatic     #15 // Field MODULE$:LMain$;
-	 *        8: return
-	 *     LocalVariableTable:
-	 *       Start  Length  Slot  Name   Signature
-	 *           0       9     0  this   LMain$;
-	 *     LineNumberTable:
-	 *       line 10: 0
-	 * }</pre>
+	 * public final class Foo$ extends scala.runtime.AbstractFunction1<java.lang.String, Foo> implements scala.Serializable {
+	 *   private Foo$();
+	 *     descriptor: ()V
+	 *     flags: ACC_PRIVATE
+	 *     Code:
+	 *       stack=1, locals=1, args_size=1
+	 *          0: aload_0
+	 *          1: invokespecial #58    // Method scala/runtime/AbstractFunction1."<init>":()V
+	 *          4: aload_0
+	 *          5: putstatic     #50    // Field MODULE$:LFoo$;
+	 *          8: return
+	 *       LocalVariableTable:
+	 *         Start  Length  Slot  Name   Signature
+	 *             0       9     0  this   LFoo$;
+	 *       LineNumberTable:
+	 *         line 1: 0
+	 * }
+	 *
+	 * public final class Main$ {
+	 *   ...
+	 *   public void main(java.lang.String[]);
+	 *     descriptor: ([Ljava/lang/String;)V
+	 *     flags: ACC_PUBLIC
+	 *     Code:
+	 *       stack=3, locals=2, args_size=2
+	 *          0: new           #16  // class Foo
+	 *          3: dup
+	 *          4: ldc           #18  // String foo
+	 *          6: invokespecial #21  // Method Foo."<init>":(Ljava/lang/String;)V
+	 *          9: pop
+	 *         10: return
+	 *       LocalVariableTable:
+	 *         Start  Length  Slot  Name   Signature
+	 *             0      11     0  this   LMain$;
+	 *             0      11     1  args   [Ljava/lang/String;
+	 *       LineNumberTable:
+	 *         line 10: 0
+	 * }}</pre>
 	 */
-	private static class InitMatcher extends AbstractMatcher {
+	private static class SimpleConstructorMatcher extends AbstractMatcher {
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
-			if ("init".equals(methodNode.name)
-					&& "()V".equals(methodNode.desc)) {
-				final InsnList instructions = methodNode.instructions;
+			final InsnList instructions = methodNode.instructions;
+			cursor = instructions.getFirst();
+			skipNonOpcodes();
+
+			if (!INIT_NAME.equals(methodNode.name)
+					|| !NO_ARGS_DESC.equals(methodNode.desc)) {
+				return;
+			}
+
+			FieldInsnNode field = forward(Opcodes.PUTSTATIC);
+			if (field == null || !MODULE_FIELD.equals(field.name)
+					|| !field.desc.equals(getDesc(context.getClassName()))) {
+				return;
+			}
+
+			skipNonOpcodes();
+			nextIs(Opcodes.RETURN);
+
+			if (cursor != null) {
 				output.ignore(instructions.getFirst(), instructions.getLast());
 			}
 		}

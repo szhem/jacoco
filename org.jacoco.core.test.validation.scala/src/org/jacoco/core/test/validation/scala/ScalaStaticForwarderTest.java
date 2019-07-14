@@ -26,14 +26,14 @@ public class ScalaStaticForwarderTest extends ValidationTestBase {
 
 	@Test
 	public void test_method_count() {
-		// ScalaStaticForwarderTarget$.<clinit> : covered
-		// ScalaStaticForwarderTarget$.<init>   : covered
+		// ScalaStaticForwarderTarget$.<clinit> : filtered
+		// ScalaStaticForwarderTarget$.<init>   : filtered
 		// ScalaStaticForwarderTarget$.main     : covered
 		// ScalaStaticForwarderTarget$.foo      : covered
 		// ScalaStaticForwarderTarget.<init>    : covered
 		// ScalaStaticForwarderTarget.main      : filtered
 		// ScalaStaticForwarderTarget.foo       : filtered
-		assertMethodCount(0, 5);
+		assertMethodCount(0, 3);
 	}
 
 }

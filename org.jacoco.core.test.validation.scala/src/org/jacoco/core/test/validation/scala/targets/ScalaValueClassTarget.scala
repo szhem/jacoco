@@ -22,7 +22,7 @@ object ScalaValueClassTarget {
 
 }
 
-class ScalaValueClassTarget(val s: String) extends AnyVal { // assertFullyCovered()
+class ScalaValueClassTarget(val s: String) extends AnyVal { // assertEmpty()
 
   def bar(v: String): String = s + v // assertFullyCovered()
 

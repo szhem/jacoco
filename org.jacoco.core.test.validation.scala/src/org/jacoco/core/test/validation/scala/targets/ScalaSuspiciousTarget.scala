@@ -17,7 +17,7 @@ package org.jacoco.core.test.validation.scala.targets
   */
 object ScalaSuspiciousTarget {
 
-  case class Foo(bar: String) extends AnyVal // assertFullyCovered()
+  case class Foo(bar: String) extends AnyVal // assertEmpty()
 
   def main(args: Array[String]): Unit = {
     Foo("bar")

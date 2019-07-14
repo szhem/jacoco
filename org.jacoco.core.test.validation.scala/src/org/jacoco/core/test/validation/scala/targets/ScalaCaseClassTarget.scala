@@ -18,7 +18,7 @@ object ScalaCaseClassTarget {
 
   case class Foo(foo: String) // assertFullyCovered()
   case class Bar(bar: String*) // assertFullyCovered()
-  case class Baz(baz: String) extends AnyVal // assertFullyCovered()
+  case class Baz(baz: String) extends AnyVal // assertEmpty()
 
   def main(args: Array[String]): Unit = {
     Foo("foo")

@@ -16,24 +16,27 @@ package org.jacoco.core.test.validation.scala.targets
   */
 object ScalaModuleTarget {
 
-  object ScalaModule { // assertFullyCovered()
+  object ScalaModule { // assertEmpty()
 
   } // assertEmpty()
 
-  object SerializableScalaModule extends Serializable { // assertFullyCovered()
+  object SerializableScalaModule extends Serializable { // assertEmpty()
 
   } // assertEmpty()
 
-  object AnyValScalaModule { // assertFullyCovered()
+  object AnyValScalaModule { // assertEmpty()
 
   } // assertEmpty()
   class AnyValScalaModule(val v: String) extends AnyVal {
     def foo: String = v
   }
 
+  case class CaseClass(v: String) // assertFullyCovered()
+
   def main(args: Array[String]): Unit = {
     ScalaModule
     SerializableScalaModule
     AnyValScalaModule
+    CaseClass("foobar")
   }
 }

@@ -26,8 +26,8 @@ public class ScalaImplicitForwarderTest extends ValidationTestBase {
 
 	@Test
 	public void test_method_count() {
-		// ScalaImplicitForwarderTarget$.<clinit>  : covered
-		// ScalaImplicitForwarderTarget$.<init>    : covered
+		// ScalaImplicitForwarderTarget$.<clinit>  : filtered
+		// ScalaImplicitForwarderTarget$.<init>    : filtered
 		// ScalaImplicitForwarderTarget$.main      : covered
 		// ScalaImplicitForwarderTarget$.Bar       : filtered (implicit factory of ScalaImplicitForwarderTarget$Bar)
 		// ScalaImplicitForwarderTarget.<init>     : covered
@@ -35,7 +35,7 @@ public class ScalaImplicitForwarderTest extends ValidationTestBase {
 		// ScalaImplicitForwarderTarget.Bar        : filtered (static forwarder to ScalaImplicitForwarderTarget$.Bar)
 		// ScalaImplicitForwarderTarget$Bar.<init> : covered
 		// ScalaImplicitForwarderTarget$Bar.baz    : covered
-		assertMethodCount(0, 6);
+		assertMethodCount(0, 4);
 	}
 
 }
