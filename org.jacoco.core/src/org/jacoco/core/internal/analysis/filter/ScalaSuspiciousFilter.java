@@ -203,10 +203,49 @@ public class ScalaSuspiciousFilter extends ScalaFilter {
 		}
 	}
 
+	/**
+	 * Filters methods which represent default arguments in case of these
+	 * methods present.
+	 *
+	 * <pre>{@code
+	 * object DefaultParams {
+	 *   def main(args: Array[String]): Unit = {
+	 *     new Foo().greet()
+	 *   }
+	 * }
+	 *
+	 * class Foo(val greeting: String = "Hello") {
+	 *   def greet(name: String = "World"): Unit = {
+	 *     print(s"${greeting} ${name}")
+	 *   }
+	 * }
+	 * }</pre>
+	 * The decompiled {@code Foo} class looks like the following
+	 * <pre>{@code
+	 * public class Foo {
+	 *   private final java.lang.String greeting;
+	 *   public static java.lang.String $lessinit$greater$default$1();
+	 *   public java.lang.String greeting();
+	 *   public void greet(java.lang.String);
+	 *   public java.lang.String greet$default$1();
+	 *   public Foo(java.lang.String);
+	 * }
+	 * }</pre>
+	 * In that case there are two methods which represent default arguments:
+	 * <ol>
+	 *     <li>the first one is {@code $lessinit$greater$default$1} that
+	 *     represents a default argument of the constructor</li>
+	 *     <li>the second one is {@code greet$default$1} that represents
+	 *     a default argument of the {@code greet} method</li>
+	 * </ol>
+	 */
 	public static class DefaultArgsMethodFilter extends AbstractMatcher {
+
+		private static final String DEF_ARGS_MARKER = "$default$";
+
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
-			if (methodNode.name.contains("$default$")) {
+			if (methodNode.name.contains(DEF_ARGS_MARKER)) {
 				final InsnList instructions = methodNode.instructions;
 				output.ignore(instructions.getFirst(), instructions.getLast());
 			}
