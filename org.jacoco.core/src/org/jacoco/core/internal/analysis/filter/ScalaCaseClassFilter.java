@@ -13,6 +13,7 @@ package org.jacoco.core.internal.analysis.filter;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.objectweb.asm.tree.InsnList;
@@ -27,6 +28,26 @@ public class ScalaCaseClassFilter extends ScalaFilter {
 			final IFilterContext context, final IFilterOutput output) {
 		new InstanceMethodsMatcher().ignoreMatches(methodNode, context, output);
 		new CompanionMethodsMatcher().ignoreMatches(methodNode, context, output);
+	}
+
+	private static boolean shouldFilter(
+			final MethodNode methodNode,
+			final IFilterContext context,
+			final Set<String> candidates) {
+		if (INIT_NAME.equals(methodNode.name)) {
+			return false;
+		}
+		if (!candidates.contains(methodNode.name)) {
+			return false;
+		}
+		if (isOnInitLine(methodNode, context)) {
+			return true;
+		}
+
+		final Map<MethodNode, Integer> counts = getLineMethodCount(context);
+		final Integer count = counts.get(methodNode);
+
+		return count != null && count > 1;
 	}
 
 	/**
@@ -71,20 +92,20 @@ public class ScalaCaseClassFilter extends ScalaFilter {
 						"productIterator", "copy", "canEqual", "equals",
 						"hashCode", "toString"
 				));
-		private static final String CASE_COPY_DEFAULT_PREFIX = "copy$default$";
 
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
 			// generated methods are expected to be on the constructor's line
-			if (isModuleClass(context) || !isOnInitLine(methodNode, context)) {
+			// or at least at the same line
+			if (isModuleClass(context)) {
+				return;
+			}
+			if (!shouldFilter(methodNode, context, CASE_INSTANCE_METHODS)) {
 				return;
 			}
 
-			if (CASE_INSTANCE_METHODS.contains(methodNode.name)
-					|| methodNode.name.startsWith(CASE_COPY_DEFAULT_PREFIX)) {
-				final InsnList instructions = methodNode.instructions;
-				output.ignore(instructions.getFirst(), instructions.getLast());
-			}
+			final InsnList instructions = methodNode.instructions;
+			output.ignore(instructions.getFirst(), instructions.getLast());
 		}
 	}
 
@@ -116,9 +137,12 @@ public class ScalaCaseClassFilter extends ScalaFilter {
 	 */
 	private static class CompanionMethodsMatcher extends AbstractMatcher {
 
-		private static final Set<String> COMPANION_INSTANCE_METHODS =
+		private static final Set<String> CASE_COMPANION_METHODS =
 				new HashSet<String>(Arrays.asList(
-						"apply", "unapply", "unapplySeq", "toString",
+						"apply", "unapply", "unapplySeq", "productArity",
+						"productElement", "productPrefix", "productIterator",
+						"canEqual", "canEqual", "equals", "hashCode",
+						"toString",
 						// although readResolve is filtered by ScalaModuleFilter
 						// too leave readResolve here untouched just for
 						// completeness of this filter;
@@ -130,14 +154,16 @@ public class ScalaCaseClassFilter extends ScalaFilter {
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
 			// generated methods are expected to be on the constructor's line
-			if (!isModuleClass(context) || !isOnInitLine(methodNode, context)) {
+			// or at least at the same line
+			if (!isModuleClass(context)) {
+				return;
+			}
+			if (!shouldFilter(methodNode, context, CASE_COMPANION_METHODS)) {
 				return;
 			}
 
-			if (COMPANION_INSTANCE_METHODS.contains(methodNode.name)) {
-				final InsnList instructions = methodNode.instructions;
-				output.ignore(instructions.getFirst(), instructions.getLast());
-			}
+			final InsnList instructions = methodNode.instructions;
+			output.ignore(instructions.getFirst(), instructions.getLast());
 		}
 	}
 

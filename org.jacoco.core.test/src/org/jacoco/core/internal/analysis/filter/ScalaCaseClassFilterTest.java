@@ -161,19 +161,6 @@ public class ScalaCaseClassFilterTest extends FilterTestBase {
 	}
 
 	@Test
-	public void should_filter_copy_default_method() {
-		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
-				"copy$default$1", "()Ljava/lang/String;", null, null);
-		m.visitLineNumber(10, new Label());
-		m.visitVarInsn(Opcodes.ALOAD, 0);
-		m.visitInsn(Opcodes.ARETURN);
-
-		filter.filter(m, context, output);
-
-		assertMethodIgnored(m);
-	}
-
-	@Test
 	public void should_not_filter_non_generated_methods() {
 		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
 				"foobar", "()V", null, null);
