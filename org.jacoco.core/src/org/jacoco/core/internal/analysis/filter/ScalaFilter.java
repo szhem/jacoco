@@ -13,12 +13,17 @@ package org.jacoco.core.internal.analysis.filter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
 import java.util.Set;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -178,6 +183,45 @@ public abstract class ScalaFilter implements IFilter {
 			}
 		}
 		return false;
+	}
+
+	static Map<Integer, Set<MethodNode>> getMethodsByLine(
+			final IFilterContext context) {
+		final Map<Integer, Set<MethodNode>> lines
+				= new HashMap<Integer, Set<MethodNode>>();
+		for (final MethodNode method : context.getClassMethods()) {
+			final InsnList instructions = method.instructions;
+			for (final ListIterator<AbstractInsnNode> iter
+				 = instructions.iterator(); iter.hasNext(); ) {
+				final AbstractInsnNode insn = iter.next();
+				if (insn.getType() == AbstractInsnNode.LINE) {
+					final LineNumberNode line = (LineNumberNode) insn;
+					Set<MethodNode> methods = lines.get(line.line);
+					if (methods == null) {
+						methods = new HashSet<MethodNode>();
+						lines.put(line.line, methods);
+					}
+					methods.add(method);
+				}
+			}
+		}
+		return lines;
+	}
+
+	static Map<MethodNode, Integer> getLineMethodCount(
+			final IFilterContext context) {
+		final Map<MethodNode, Integer> counts
+				= new HashMap<MethodNode, Integer>();
+
+		final Map<Integer, Set<MethodNode>> methods
+				= getMethodsByLine(context);
+		for (Map.Entry<Integer, Set<MethodNode>> entry: methods.entrySet()) {
+			for (MethodNode method : entry.getValue()) {
+				counts.put(method, entry.getKey());
+			}
+		}
+
+		return counts;
 	}
 
 	static String getDesc(final String className) {

@@ -25,6 +25,7 @@ object ScalaCaseClassTarget {
     foo: String = "foo", // assertFullyCovered()
     bar: String = "bar"  // assertFullyCovered()
   )
+  case object FooBaz     // assertFullyCovered()
 
   def main(args: Array[String]): Unit = {
     Foo("foo")
@@ -38,5 +39,7 @@ object ScalaCaseClassTarget {
 
     val foobar = FooBar()
     nop(foobar.foo + foobar.bar)
+
+    FooBaz
   }
 }
