@@ -31,6 +31,8 @@ public class ScalaSuspiciousFilter extends ScalaFilter {
 		new NoLineInfoMethodsMatcher()
 				.ignoreMatches(methodNode, context, output);
 		new OuterNullCheckFilter().ignoreMatches(methodNode, context, output);
+		new DefaultArgsMethodFilter()
+				.ignoreMatches(methodNode, context, output);
 	}
 
 	/**
@@ -198,6 +200,16 @@ public class ScalaSuspiciousFilter extends ScalaFilter {
 			}
 
 			output.ignore(from, to);
+		}
+	}
+
+	public static class DefaultArgsMethodFilter extends AbstractMatcher {
+		void ignoreMatches(final MethodNode methodNode,
+				final IFilterContext context, final IFilterOutput output) {
+			if (methodNode.name.contains("$default$")) {
+				final InsnList instructions = methodNode.instructions;
+				output.ignore(instructions.getFirst(), instructions.getLast());
+			}
 		}
 	}
 

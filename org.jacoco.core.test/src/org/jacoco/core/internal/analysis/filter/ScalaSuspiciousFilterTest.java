@@ -104,4 +104,15 @@ public class ScalaSuspiciousFilterTest extends FilterTestBase {
 		assertIgnored(range);
 	}
 
+	@Test
+	public void should_filter_methods_with_default_args() {
+		MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"foo$default$1", "()Ljava/lang/String;", null, null);
+		m.visitInsn(Opcodes.RETURN);
+
+		filter.filter(m, context, output);
+
+		assertMethodIgnored(m);
+	}
+
 }
