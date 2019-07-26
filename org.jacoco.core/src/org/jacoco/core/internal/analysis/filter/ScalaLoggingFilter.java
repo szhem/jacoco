@@ -54,11 +54,17 @@ public class ScalaLoggingFilter extends ScalaFilter {
 					continue;
 				}
 
-				JumpInsnNode jump = (JumpInsnNode) cursor;
-				cursor = prev(jump.label);
-				if (cursor != null) {
-					output.ignore(jump, cursor);
+				// from time to time there is a jump at the end of the if block
+				final JumpInsnNode from = (JumpInsnNode) cursor;
+				AbstractInsnNode to = from.label;
+				if (to.getPrevious().getOpcode() == Opcodes.GOTO) {
+					to = ((JumpInsnNode) to.getPrevious()).label;
 				}
+
+				if (to != null) {
+					output.ignore(from, to);
+				}
+				cursor = to;
 			}
 		}
 
@@ -75,15 +81,6 @@ public class ScalaLoggingFilter extends ScalaFilter {
 			return node.name.endsWith("Enabled")
 					|| node.name.endsWith("Loggable")
 					|| node.name.endsWith("EnabledFor");
-		}
-
-		private static AbstractInsnNode prev(AbstractInsnNode i) {
-			do {
-				i = i.getPrevious();
-			} while (i != null && (AbstractInsnNode.FRAME == i.getType()
-					|| AbstractInsnNode.LABEL == i.getType()
-					|| AbstractInsnNode.LINE == i.getType()));
-			return i;
 		}
 
 	}

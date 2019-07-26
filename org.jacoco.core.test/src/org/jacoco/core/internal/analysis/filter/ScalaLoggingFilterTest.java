@@ -94,10 +94,9 @@ public class ScalaLoggingFilterTest extends FilterTestBase {
 		m.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/util/logging/Logger",
 				"log", "(Ljava/util/logging/Level;Ljava/lang/String;)V", false);
 
+		m.visitLabel(lblInfo);
 		to = m.instructions.getLast();
 		ranges[0] = new Range(from, to);
-
-		m.visitLabel(lblInfo);
 
 		// print(" World")
 		m.visitFieldInsn(Opcodes.GETSTATIC, "scala/Predef$", "MODULE$",
@@ -132,10 +131,9 @@ public class ScalaLoggingFilterTest extends FilterTestBase {
 		m.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/util/logging/Logger",
 				"log", "(Ljava/util/logging/Level;Ljava/lang/String;)V", false);
 
+		m.visitLabel(lblFine);
 		to = m.instructions.getLast();
 		ranges[1] = new Range(from, to);
-
-		m.visitLabel(lblFine);
 
 		// print("!")
 		m.visitFieldInsn(Opcodes.GETSTATIC, "scala/Predef$", "MODULE$",
@@ -209,10 +207,9 @@ public class ScalaLoggingFilterTest extends FilterTestBase {
 		m.visitMethodInsn(Opcodes.INVOKEINTERFACE, "org/slf4j/Logger",
 				"info", "(Ljava/lang/String;)V", true);
 
+		m.visitLabel(lblInfo);
 		to = m.instructions.getLast();
 		ranges[0] = new Range(from, to);
-
-		m.visitLabel(lblInfo);
 
 		// print(" World")
 		m.visitFieldInsn(Opcodes.GETSTATIC, "scala/Predef$", "MODULE$",
@@ -243,10 +240,9 @@ public class ScalaLoggingFilterTest extends FilterTestBase {
 		m.visitMethodInsn(Opcodes.INVOKEINTERFACE, "org/slf4j/Logger",
 				"debug", "(Ljava/lang/String;)V", true);
 
+		m.visitLabel(lblDebug);
 		to = m.instructions.getLast();
 		ranges[1] = new Range(from, to);
-
-		m.visitLabel(lblDebug);
 
 		// print("!")
 		m.visitFieldInsn(Opcodes.GETSTATIC, "scala/Predef$", "MODULE$",
@@ -322,10 +318,9 @@ public class ScalaLoggingFilterTest extends FilterTestBase {
 		m.visitMethodInsn(Opcodes.INVOKEINTERFACE, "org/apache/log4j/Logger",
 				"info", "(Ljava/lang/Object;)V", true);
 
+		m.visitLabel(lblInfo);
 		to = m.instructions.getLast();
 		ranges[0] = new Range(from, to);
-
-		m.visitLabel(lblInfo);
 
 		// print(" World")
 		m.visitFieldInsn(Opcodes.GETSTATIC, "scala/Predef$", "MODULE$",
@@ -358,10 +353,9 @@ public class ScalaLoggingFilterTest extends FilterTestBase {
 		m.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "org/apache/log4j/Logger",
 				"debug", "(Ljava/lang/Object;)V", false);
 
+		m.visitLabel(lblDebug);
 		to = m.instructions.getLast();
 		ranges[1] = new Range(from, to);
-
-		m.visitLabel(lblDebug);
 
 		// print("!")
 		m.visitFieldInsn(Opcodes.GETSTATIC, "scala/Predef$", "MODULE$",
@@ -451,13 +445,13 @@ public class ScalaLoggingFilterTest extends FilterTestBase {
 		Label lblGoto = new Label();
 		m.visitJumpInsn(Opcodes.GOTO, lblGoto);
 
-		to = m.instructions.getLast();
-		ranges[0] = new Range(from, to);
 		m.visitLabel(lblInfo);
-
 		m.visitFieldInsn(Opcodes.GETSTATIC, "scala/runtime/BoxedUnit", "UNIT",
 				"Lscala/runtime/BoxedUnit;");
 		m.visitLabel(lblGoto);
+		to = m.instructions.getLast();
+		ranges[0] = new Range(from, to);
+
 		m.visitInsn(Opcodes.POP);
 
 		// print(" World")
@@ -507,13 +501,13 @@ public class ScalaLoggingFilterTest extends FilterTestBase {
 		lblGoto = new Label();
 		m.visitJumpInsn(Opcodes.GOTO, lblGoto);
 
-		to = m.instructions.getLast();
-		ranges[1] = new Range(from, to);
 		m.visitLabel(lblDebug);
-
 		m.visitFieldInsn(Opcodes.GETSTATIC, "scala/runtime/BoxedUnit", "UNIT",
 				"Lscala/runtime/BoxedUnit;");
 		m.visitLabel(lblGoto);
+		to = m.instructions.getLast();
+		ranges[1] = new Range(from, to);
+
 		m.visitInsn(Opcodes.POP);
 
 		// print("!")
