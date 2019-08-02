@@ -415,4 +415,26 @@ public class AbstractMatcherTest {
 		assertSame(fieldNode, insn);
 	}
 
+	@Test
+	public void count() {
+		m.visitInsn(Opcodes.NOP);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitFieldInsn(Opcodes.GETFIELD, "owner", "name1", "()J");
+		m.visitVarInsn(Opcodes.ALOAD, 1);
+		m.visitFieldInsn(Opcodes.GETFIELD, "owner", "name2", "()V");
+		m.visitInsn(Opcodes.RETURN);
+
+		final int varInsns = AbstractMatcher.count(m.instructions.getFirst(),
+				new AbstractMatcher.OpcodePredicate(Opcodes.ALOAD));
+		assertEquals(2, varInsns);
+
+		final int fieldInsns = AbstractMatcher.count(m.instructions.getFirst(),
+				new AbstractMatcher.OpcodePredicate(Opcodes.GETFIELD));
+		assertEquals(2, fieldInsns);
+
+		final int methodInsns = AbstractMatcher.count(m.instructions.getFirst(),
+				new AbstractMatcher.OpcodePredicate(Opcodes.INVOKEVIRTUAL));
+		assertEquals(0, methodInsns);
+	}
+
 }

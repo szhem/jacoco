@@ -170,6 +170,15 @@ abstract class AbstractMatcher {
 	 * provided opcodes.
 	 */
 	final <T extends AbstractInsnNode> T backward(final Integer... opcodes) {
+		return backward(Arrays.asList(opcodes));
+	}
+
+	/**
+	 * Returns first instruction preceding a given one that matches one of the
+	 * provided opcodes.
+	 */
+	final <T extends AbstractInsnNode> T backward(
+			final Collection<Integer> opcodes) {
 		T insn = backward(cursor, opcodes);
 		cursor = insn;
 		return insn;
@@ -180,6 +189,15 @@ abstract class AbstractMatcher {
 	 * provided opcodes.
 	 */
 	final <T extends AbstractInsnNode> T forward(final Integer... opcodes) {
+		return forward(Arrays.asList(opcodes));
+	}
+
+	/**
+	 * Returns first instruction following a given one that matches one of the
+	 * provided opcodes.
+	 */
+	final <T extends AbstractInsnNode> T forward(
+			final Collection<Integer> opcodes) {
 		T insn = forward(cursor, opcodes);
 		cursor = insn;
 		return insn;
@@ -229,11 +247,29 @@ abstract class AbstractMatcher {
 	}
 
 	/**
+	 * Returns first instruction preceding a given one that matches one of the
+	 * provided opcodes.
+	 */
+	static <T extends AbstractInsnNode> T backward(
+			final AbstractInsnNode cursor, final Collection<Integer> opcodes) {
+		return backward(cursor, new OpcodePredicate(opcodes));
+	}
+
+	/**
 	 * Returns first instruction following a given one that matches one of the
 	 * provided opcodes.
 	 */
 	static <T extends AbstractInsnNode> T forward(
 			final AbstractInsnNode cursor, final Integer... opcodes) {
+		return forward(cursor, new OpcodePredicate(opcodes));
+	}
+
+	/**
+	 * Returns first instruction following a given one that matches one of the
+	 * provided opcodes.
+	 */
+	static <T extends AbstractInsnNode> T forward(
+			final AbstractInsnNode cursor, final Collection<Integer> opcodes) {
 		return forward(cursor, new OpcodePredicate(opcodes));
 	}
 
@@ -263,6 +299,17 @@ abstract class AbstractMatcher {
 		return (T) cursor;
 	}
 
+	static int count(AbstractInsnNode cursor, final Predicate predicate) {
+		int count = 0;
+		while (cursor != null) {
+			if (predicate.matches(cursor)) {
+				count++;
+			}
+			cursor = cursor.getNext();
+		}
+		return count;
+	}
+
 	interface Predicate {
 		boolean matches(AbstractInsnNode node);
 	}
@@ -271,7 +318,8 @@ abstract class AbstractMatcher {
 		private final Set<Integer> opcodes;
 
 		OpcodePredicate(final Collection<Integer> opcodes) {
-			this.opcodes = new HashSet<Integer>(opcodes);
+			this.opcodes = opcodes instanceof Set
+					? (Set<Integer>) opcodes : new HashSet<Integer>(opcodes);
 		}
 
 		OpcodePredicate(final Integer... opcodes) {
