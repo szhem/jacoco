@@ -12,10 +12,14 @@
 
 package org.jacoco.core.internal.analysis.filter;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -26,13 +30,13 @@ import org.objectweb.asm.tree.VarInsnNode;
  */
 public class ScalaSuspiciousFilter extends ScalaFilter {
 
-	public void filterInternal(final MethodNode methodNode,
-			final IFilterContext context, final IFilterOutput output) {
-		new NoLineInfoMethodsMatcher()
-				.ignoreMatches(methodNode, context, output);
-		new OuterNullCheckFilter().ignoreMatches(methodNode, context, output);
-		new DefaultArgsMethodFilter()
-				.ignoreMatches(methodNode, context, output);
+	@Override
+	Collection<? extends ScalaMatcher> getMatchers() {
+		return Arrays.asList(
+				new NoLineInfoMethodsMatcher(),
+				new OuterNullCheckFilter(),
+				new DefaultArgsMethodFilter()
+		);
 	}
 
 	/**
@@ -96,7 +100,9 @@ public class ScalaSuspiciousFilter extends ScalaFilter {
 	 * In that case {@code copy$default$1$extension} method does not have
 	 * line numbers debug info although all the other methods do have.
 	 */
-	private static class NoLineInfoMethodsMatcher extends AbstractMatcher {
+	private static class NoLineInfoMethodsMatcher extends ScalaMatcher {
+
+		@Override
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
 			LineNumberNode line = getLine(methodNode);
@@ -160,46 +166,60 @@ public class ScalaSuspiciousFilter extends ScalaFilter {
 	 * ... which contains unnecessary checks of {@code $outer} field (that
 	 * references an instance of the outer {@code Main} class) for null pointer.
 	 */
-	private static class OuterNullCheckFilter extends AbstractMatcher {
+	private static class OuterNullCheckFilter extends ScalaMatcher {
 
-		private static final String OUTER_FIELD_NAME = "$outer";
+		// 0 index corresponds to this
+		// 1 index corresponds to zero's argument
 		private static final int OUTER_FIELD_INDEX = 1;
 
+		@Override
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
-			final InsnList instructions = methodNode.instructions;
-			cursor = instructions.getFirst();
-
 			if (!INIT_NAME.equals(methodNode.name)) {
 				return;
 			}
 
-			VarInsnNode varInsnNode = forward(Opcodes.ALOAD);
-			if (varInsnNode == null || varInsnNode.var != OUTER_FIELD_INDEX) {
+			String outerDesc = null;
+			for (FieldNode field : context.getClassFields()) {
+				if (OUTER_FIELD.equals(field.name)) {
+					outerDesc = field.desc;
+					break;
+				}
+			}
+			if (outerDesc == null) {
 				return;
 			}
 
-			AbstractInsnNode from = cursor;
+			final InsnList instructions = methodNode.instructions;
+			cursor = instructions.getFirst();
+			while (cursor != null) {
+				final VarInsnNode varInsn = forward(Opcodes.ALOAD);
+				if (varInsn == null) {
+					return;
+				}
+				if (varInsn.var != OUTER_FIELD_INDEX) {
+					next();
+					continue;
+				}
 
-			nextIs(Opcodes.IFNONNULL);
-			nextIs(Opcodes.ACONST_NULL);
-			nextIs(Opcodes.ATHROW);
-			if (cursor == null) {
-				return;
+				final AbstractInsnNode from = cursor;
+				next();
+				if (cursor == null || cursor.getOpcode() != Opcodes.IFNONNULL) {
+					continue;
+				}
+				final AbstractInsnNode to = ((JumpInsnNode) cursor).label;
+
+				nextIs(Opcodes.ACONST_NULL);
+				nextIs(Opcodes.ATHROW);
+				if (cursor == null) {
+					cursor = from;
+					next();
+					continue;
+				}
+
+				output.ignore(from, to);
+				break;
 			}
-
-			AbstractInsnNode to = cursor;
-
-			final FieldInsnNode field = forward(Opcodes.PUTFIELD);
-			if (field == null || !OUTER_FIELD_NAME.equals(field.name)) {
-				return;
-			}
-
-			if (forward(Opcodes.RETURN) == null) {
-				return;
-			}
-
-			output.ignore(from, to);
 		}
 	}
 
@@ -239,10 +259,11 @@ public class ScalaSuspiciousFilter extends ScalaFilter {
 	 *     a default argument of the {@code greet} method</li>
 	 * </ol>
 	 */
-	public static class DefaultArgsMethodFilter extends AbstractMatcher {
+	public static class DefaultArgsMethodFilter extends ScalaMatcher {
 
 		private static final String DEF_ARGS_MARKER = "$default$";
 
+		@Override
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
 			if (methodNode.name.contains(DEF_ARGS_MARKER)) {

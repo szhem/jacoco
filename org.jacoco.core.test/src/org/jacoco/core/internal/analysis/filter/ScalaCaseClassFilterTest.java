@@ -267,6 +267,25 @@ public class ScalaCaseClassFilterTest extends FilterTestBase {
 		assertMethodIgnored(m);
 	}
 
+	@Test
+	public void should_filter_inner_class_companion_toString_method() {
+		context.className = "Foo$Bar$";
+		final FieldNode f = new FieldNode(InstrSupport.ASM_API_VERSION,
+				Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL,
+				"$outer", "LBaz;", null, null);
+		context.classFields.add(f);
+
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"toString", "()Ljava/lang/String;", null, null);
+		m.visitLineNumber(10, new Label());
+		m.visitLdcInsn("foo");
+		m.visitInsn(Opcodes.ARETURN);
+
+		filter.filter(m, context, output);
+
+		assertMethodIgnored(m);
+	}
+
 	private void setUpModuleClass() {
 		context.className = "Main$";
 		final FieldNode f = new FieldNode(InstrSupport.ASM_API_VERSION,

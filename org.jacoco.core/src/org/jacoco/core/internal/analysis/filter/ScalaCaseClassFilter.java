@@ -12,10 +12,10 @@
 package org.jacoco.core.internal.analysis.filter;
 
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -24,27 +24,27 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class ScalaCaseClassFilter extends ScalaFilter {
 
-	public void filterInternal(final MethodNode methodNode,
-			final IFilterContext context, final IFilterOutput output) {
-		new InstanceMethodsMatcher().ignoreMatches(methodNode, context, output);
-		new CompanionMethodsMatcher().ignoreMatches(methodNode, context, output);
+	@Override
+	Collection<? extends ScalaMatcher> getMatchers() {
+		return Arrays.asList(
+				new InstanceMethodsMatcher(),
+				new CompanionMethodsMatcher()
+		);
 	}
 
-	private static boolean shouldFilter(
-			final MethodNode methodNode,
-			final IFilterContext context,
-			final Set<String> candidates) {
+	private static boolean shouldFilter(final MethodNode methodNode,
+			final IFilterContext context) {
 		if (INIT_NAME.equals(methodNode.name)) {
 			return false;
 		}
-		if (!candidates.contains(methodNode.name)) {
+		if (!PRODUCT_CANDIDATE_METHODS.contains(methodNode.name)) {
 			return false;
 		}
 		if (isOnInitLine(methodNode, context)) {
 			return true;
 		}
 
-		final Map<MethodNode, Integer> counts = getLineMethodCount(context);
+		final Map<MethodNode, Integer> counts = getSameLineMethodsCount(context);
 		final Integer count = counts.get(methodNode);
 
 		return count != null && count > 1;
@@ -84,15 +84,9 @@ public class ScalaCaseClassFilter extends ScalaFilter {
 	 * generated class files, e.g. don't expect this matcher to work when
 	 * using {@code scalac -g:none} while compiling classes.
 	 */
-	private static class InstanceMethodsMatcher extends AbstractMatcher {
+	private static class InstanceMethodsMatcher extends ScalaMatcher {
 
-		private static final Set<String> CASE_INSTANCE_METHODS =
-				new HashSet<String>(Arrays.asList(
-						"productArity", "productElement", "productPrefix",
-						"productIterator", "copy", "canEqual", "equals",
-						"hashCode", "toString"
-				));
-
+		@Override
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
 			// generated methods are expected to be on the constructor's line
@@ -100,7 +94,7 @@ public class ScalaCaseClassFilter extends ScalaFilter {
 			if (isModuleClass(context)) {
 				return;
 			}
-			if (!shouldFilter(methodNode, context, CASE_INSTANCE_METHODS)) {
+			if (!shouldFilter(methodNode, context)) {
 				return;
 			}
 
@@ -135,36 +129,33 @@ public class ScalaCaseClassFilter extends ScalaFilter {
 	 * generated class files, e.g. don't expect this matcher to work when
 	 * using {@code scalac -g:none} while compiling classes.
 	 */
-	private static class CompanionMethodsMatcher extends AbstractMatcher {
+	private static class CompanionMethodsMatcher extends ScalaMatcher {
 
-		private static final Set<String> CASE_COMPANION_METHODS =
-				new HashSet<String>(Arrays.asList(
-						"apply", "unapply", "unapplySeq", "productArity",
-						"productElement", "productPrefix", "productIterator",
-						"canEqual", "canEqual", "equals", "hashCode",
-						"toString",
-						// although readResolve is filtered by ScalaModuleFilter
-						// too leave readResolve here untouched just for
-						// completeness of this filter;
-						// anyway the generated methods are ignored only in case
-						// they are on the same line as the constructor is.
-						"readResolve"
-				));
-
+		@Override
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
 			// generated methods are expected to be on the constructor's line
 			// or at least at the same line
-			if (!isModuleClass(context)) {
+			if (!isModuleClass(context) && !hasOuterField(context)) {
 				return;
 			}
-			if (!shouldFilter(methodNode, context, CASE_COMPANION_METHODS)) {
+			if (!shouldFilter(methodNode, context)) {
 				return;
 			}
 
 			final InsnList instructions = methodNode.instructions;
 			output.ignore(instructions.getFirst(), instructions.getLast());
 		}
+
+		private static boolean hasOuterField(final IFilterContext context) {
+			for (FieldNode field : context.getClassFields()) {
+				if (OUTER_FIELD.equals(field.name)) {
+					return true;
+				}
+			}
+			return false;
+		}
+
 	}
 
 }

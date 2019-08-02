@@ -27,6 +27,17 @@ object ScalaCaseClassTarget {
   )
   case object FooBaz     // assertFullyCovered()
 
+  def innerClasses(): Unit = {
+    val bar = () => { // assertFullyCovered()
+      case class InnerFoo(foo: String) // assertFullyCovered()
+      case object InnerBar // assertFullyCovered()
+
+      nop(InnerFoo("foo").foo) // assertFullyCovered()
+      nop(InnerBar) // assertFullyCovered()
+    }
+    bar()
+  }
+
   def main(args: Array[String]): Unit = {
     Foo("foo")
     Foo
@@ -41,5 +52,7 @@ object ScalaCaseClassTarget {
     nop(foobar.foo + foobar.bar)
 
     FooBaz
+
+    innerClasses()
   }
 }

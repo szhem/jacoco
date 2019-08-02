@@ -14,6 +14,7 @@ package org.jacoco.core.internal.analysis.filter;
 import org.jacoco.core.internal.instr.InstrSupport;
 import org.junit.Before;
 import org.junit.Test;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -30,11 +31,6 @@ public class ScalaModuleFilterTest extends FilterTestBase {
 		context.className = "Main$";
 		context.getClassAnnotations()
 				.add(ScalaFilter.SCALA_SIGNATURE_ANNOTATION);
-
-		final FieldNode f = new FieldNode(InstrSupport.ASM_API_VERSION,
-				Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL,
-				"MODULE$", "LMain$;", null, null);
-		context.classFields.add(f);
 	}
 
 	@Test
@@ -77,6 +73,152 @@ public class ScalaModuleFilterTest extends FilterTestBase {
 		filter.filter(m, context, output);
 
 		assertMethodIgnored(m);
+	}
+
+	@Test
+	public void should_filter_module_lazy_factory_methods() {
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"Foo$1$lzycompute",
+				"(Lscala/runtime/VolatileObjectRef;)LInnerClass$Foo$2$;", null,
+				null);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitInsn(Opcodes.RETURN);
+
+		filter.filter(m, context, output);
+
+		assertMethodIgnored(m);
+	}
+
+	@Test
+	public void should_filter_module_factory_methods() {
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"Foo$1",
+				"(Lscala/runtime/VolatileObjectRef;)LInnerClass$Foo$2$;", null,
+				null);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitInsn(Opcodes.RETURN);
+
+		filter.filter(m, context, output);
+
+		assertMethodIgnored(m);
+	}
+
+	@Test
+	public void should_filter_inner_module_simple_constructor() {
+		context.classFields.add(new FieldNode(
+				Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC,
+				"$outer", "LMain;", null, new Object()
+		));
+
+		final Label lblNull = new Label();
+
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"<init>", "(LMain;)V", null, null);
+		m.visitVarInsn(Opcodes.ALOAD, 1);
+		m.visitJumpInsn(Opcodes.IFNONNULL, lblNull);
+		m.visitInsn(Opcodes.ACONST_NULL);
+		m.visitInsn(Opcodes.ATHROW);
+		m.visitLabel(lblNull);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitVarInsn(Opcodes.ALOAD, 1);
+		m.visitFieldInsn(Opcodes.PUTFIELD, "Main$Foo$2$", "$outer", "LMain;");
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>",
+				"()V", false);
+		m.visitInsn(Opcodes.RETURN);
+
+		filter.filter(m, context, output);
+
+		assertMethodIgnored(m);
+	}
+
+	@Test
+	public void should_filter_inner_module_simple_constructor_with_no_fields() {
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"<init>", "(LMain;)V", null, null);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>",
+				"()V", false);
+		m.visitInsn(Opcodes.RETURN);
+
+		filter.filter(m, context, output);
+
+		assertMethodIgnored(m);
+	}
+
+	@Test
+	public void should_not_filter_inner_module_constructors_with_many_fields() {
+		context.classFields.add(new FieldNode(
+				Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC,
+				"$outer", "LMain;", null, new Object()
+		));
+		context.classFields.add(new FieldNode(
+				Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL,
+				"foo", "Ljava/lang/String;", null, new Object()
+		));
+
+		final Label lblNull = new Label();
+
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"<init>", "(LMain;)V", null, null);
+
+		m.visitVarInsn(Opcodes.ALOAD, 1);
+		m.visitJumpInsn(Opcodes.IFNONNULL, lblNull);
+		m.visitInsn(Opcodes.ACONST_NULL);
+		m.visitInsn(Opcodes.ATHROW);
+		m.visitLabel(lblNull);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitVarInsn(Opcodes.ALOAD, 1);
+		m.visitFieldInsn(Opcodes.PUTFIELD, "Main$Foo$2$", "$outer", "LMain;");
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>",
+				"()V", false);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitLdcInsn("foo");
+		m.visitFieldInsn(Opcodes.PUTFIELD, "Main$Foo$2$", "foo",
+				"Ljava/lang/String;");
+		m.visitInsn(Opcodes.RETURN);
+
+		filter.filter(m, context, output);
+
+		assertIgnored();
+	}
+
+	@Test
+	public void should_not_filter_inner_module_constructors_with_many_calls() {
+		context.classFields.add(new FieldNode(
+				Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC,
+				"$outer", "LMain;", null, new Object()
+		));
+		context.classFields.add(new FieldNode(
+				Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL,
+				"foo", "Ljava/lang/String;", null, new Object()
+		));
+
+		final Label lblNull = new Label();
+
+		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION, 0,
+				"<init>", "(LMain;)V", null, null);
+
+		m.visitVarInsn(Opcodes.ALOAD, 1);
+		m.visitJumpInsn(Opcodes.IFNONNULL, lblNull);
+		m.visitInsn(Opcodes.ACONST_NULL);
+		m.visitInsn(Opcodes.ATHROW);
+		m.visitLabel(lblNull);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitVarInsn(Opcodes.ALOAD, 1);
+		m.visitFieldInsn(Opcodes.PUTFIELD, "Main$Foo$2$", "$outer", "LMain;");
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>",
+				"()V", false);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "Main$Foo$2$", "foo", "()V",
+			false);
+		m.visitInsn(Opcodes.RETURN);
+
+		filter.filter(m, context, output);
+
+		assertIgnored();
 	}
 
 }

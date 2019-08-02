@@ -13,6 +13,8 @@
 package org.jacoco.core.internal.analysis.filter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import org.objectweb.asm.Opcodes;
@@ -27,13 +29,14 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class ScalaLazyAccessorFilter extends ScalaFilter {
 
-	private static final String LAZY_SUFFIX = "$lzycompute";
 	private static final String BITMAP_PREFIX = "bitmap$";
 
-	public void filterInternal(final MethodNode methodNode,
-			final IFilterContext context, final IFilterOutput output) {
-		new LazyAccessorMatcher().ignoreMatches(methodNode, output);
-		new LazyComputeMatcher().ignoreMatches(methodNode, output);
+	@Override
+	Collection<? extends ScalaMatcher> getMatchers() {
+		return Arrays.asList(
+				new LazyAccessorMatcher(),
+				new LazyComputeMatcher()
+		);
 	}
 
 	/**
@@ -85,9 +88,11 @@ public class ScalaLazyAccessorFilter extends ScalaFilter {
 	 *   - returning the value of the initialized field
 	 * </p>
 	 */
-	private static class LazyAccessorMatcher extends AbstractMatcher {
+	private static class LazyAccessorMatcher extends ScalaMatcher {
+
+		@Override
 		void ignoreMatches(final MethodNode methodNode,
-				final IFilterOutput output) {
+				final IFilterContext context, final IFilterOutput output) {
 			firstIsALoad0(methodNode);
 			// find bitmap$x field
 			nextIs(Opcodes.GETFIELD);
@@ -233,9 +238,11 @@ public class ScalaLazyAccessorFilter extends ScalaFilter {
 	 *         42: areturn
 	 * }</pre>
 	 */
-	private static class LazyComputeMatcher extends AbstractMatcher {
+	private static class LazyComputeMatcher extends ScalaMatcher {
+
+		@Override
 		void ignoreMatches(final MethodNode methodNode,
-				final IFilterOutput output) {
+				final IFilterContext context, final IFilterOutput output) {
 			final List<InsnRange> ranges = new ArrayList<InsnRange>();
 			InsnList instructions = methodNode.instructions;
 

@@ -13,10 +13,11 @@ package org.jacoco.core.internal.analysis.filter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -62,26 +63,51 @@ public abstract class ScalaFilter implements IFilter {
 	static final String INIT_NAME = "<init>";
 	static final String NO_ARGS_DESC = "()V";
 
-	static final String MODULE_FIELD = "MODULE$";
-	static final String EXTENSION_METHOD_SUFFIX = "$extension";
+	static final String ANON_FUN_SUFFIX = "$anonfun$";
+	static final String LAZY_SUFFIX = "$lzycompute";
+	static final String EXTENSION_SUFFIX = "$extension";
 
-	static final Integer[] RETURN_OPCODES = {
-			Opcodes.IRETURN, Opcodes.LRETURN, Opcodes.FRETURN,
-			Opcodes.DRETURN, Opcodes.ARETURN, Opcodes.RETURN
-	};
-	static {
-		Arrays.sort(RETURN_OPCODES);
+	static final String OUTER_FIELD = "$outer";
+	static final String MODULE_FIELD = "MODULE$";
+
+	static final Set<Integer> RETURN_OPCODES = new HashSet<Integer>(
+			Arrays.asList(
+				Opcodes.IRETURN, Opcodes.LRETURN, Opcodes.FRETURN,
+				Opcodes.DRETURN, Opcodes.ARETURN, Opcodes.RETURN
+			)
+	);
+
+	static final Set<String> PRODUCT_CANDIDATE_METHODS =
+			new HashSet<String>(Arrays.asList(
+					// automatically generated methods in companion objects,
+					// e.g. in the case classes
+					"apply", "unapply", "unapplySeq",
+					// product methods
+					"productArity", "productElement", "productPrefix",
+					"productIterator", "canEqual",
+					// automatically generated method for case companions
+					"copy",
+					// automatically generated methods for objects
+					"equals", "hashCode", "toString",
+					// automatically generated methods for serializable objects
+					"readResolve"
+			));
+
+	static abstract class ScalaMatcher extends AbstractMatcher {
+		abstract void ignoreMatches(MethodNode methodNode,
+				IFilterContext context, IFilterOutput output);
 	}
 
-	public final void filter(final MethodNode methodNode,
+	public void filter(final MethodNode methodNode,
 			final IFilterContext context, final IFilterOutput output) {
 		if (methodNode.instructions.size() != 0 && isScalaClass(context)) {
-			filterInternal(methodNode, context, output);
+			for (ScalaMatcher matcher : getMatchers()) {
+				matcher.ignoreMatches(methodNode, context, output);
+			}
 		}
 	}
 
-	abstract void filterInternal(final MethodNode methodNode,
-			final IFilterContext context, final IFilterOutput output);
+	abstract Collection<? extends ScalaMatcher> getMatchers();
 
 	//
 	// Methods to be used by the Scala filters
@@ -97,14 +123,7 @@ public abstract class ScalaFilter implements IFilter {
 	}
 
 	static boolean isModuleClass(final IFilterContext context) {
-		final String className = context.getClassName();
-		if (!className.endsWith("$")) {
-			return false;
-		}
-		final FieldNode moduleField =
-				findField(context, MODULE_FIELD, getDesc(className));
-		return moduleField != null
-				&& (moduleField.access & Opcodes.ACC_STATIC) != 0;
+		return context.getClassName().endsWith("$");
 	}
 
 	static FieldNode findField(final IFilterContext context,
@@ -185,13 +204,16 @@ public abstract class ScalaFilter implements IFilter {
 		return false;
 	}
 
+	/**
+	 * Gets methods grouped by the line number they are located on.
+	 */
 	static Map<Integer, Set<MethodNode>> getMethodsByLine(
 			final IFilterContext context) {
 		final Map<Integer, Set<MethodNode>> lines
 				= new HashMap<Integer, Set<MethodNode>>();
 		for (final MethodNode method : context.getClassMethods()) {
 			final InsnList instructions = method.instructions;
-			for (final ListIterator<AbstractInsnNode> iter
+			for (final Iterator<AbstractInsnNode> iter
 				 = instructions.iterator(); iter.hasNext(); ) {
 				final AbstractInsnNode insn = iter.next();
 				if (insn.getType() == AbstractInsnNode.LINE) {
@@ -208,7 +230,15 @@ public abstract class ScalaFilter implements IFilter {
 		return lines;
 	}
 
-	static Map<MethodNode, Integer> getLineMethodCount(
+	/**
+	 * Gets maximum number of methods located on the lines of another method.
+	 * <p>
+	 *     The values are the maximum amount of other methods which have line
+	 *     numbers in common with the method represented by keys of the returned
+	 *     {@code Map}.
+	 * </p>
+	 */
+	static Map<MethodNode, Integer> getSameLineMethodsCount(
 			final IFilterContext context) {
 		final Map<MethodNode, Integer> counts
 				= new HashMap<MethodNode, Integer>();
@@ -217,7 +247,11 @@ public abstract class ScalaFilter implements IFilter {
 				= getMethodsByLine(context);
 		for (Map.Entry<Integer, Set<MethodNode>> entry: methods.entrySet()) {
 			for (MethodNode method : entry.getValue()) {
-				counts.put(method, entry.getKey());
+				final Integer oldNumMethods = counts.get(method);
+				final int newNumMethods = entry.getValue().size();
+				if (oldNumMethods == null || oldNumMethods < newNumMethods) {
+					counts.put(method, newNumMethods);
+				}
 			}
 		}
 

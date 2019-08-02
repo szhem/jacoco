@@ -12,6 +12,9 @@
 
 package org.jacoco.core.internal.analysis.filter;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
@@ -25,13 +28,12 @@ public class ScalaAccessorFilter extends ScalaFilter {
 
 	private static final String MUTATOR_SUFFIX = "_$eq";
 
-	public void filterInternal(final MethodNode methodNode,
-			final IFilterContext context, final IFilterOutput output) {
-		if (new AccessorMatcher().match(methodNode)
-				|| new MutatorMatcher().match(methodNode)) {
-			final InsnList instructions = methodNode.instructions;
-			output.ignore(instructions.getFirst(), instructions.getLast());
-		}
+	@Override
+	Collection<? extends ScalaMatcher> getMatchers() {
+		return Arrays.asList(
+				new AccessorMatcher(),
+				new MutatorMatcher()
+		);
 	}
 
 	/**
@@ -70,8 +72,12 @@ public class ScalaAccessorFilter extends ScalaFilter {
 	 * - method does nothing as just returning the corresponding field
 	 * </p>
 	 */
-	private static class AccessorMatcher extends AbstractMatcher {
-		public boolean match(final MethodNode methodNode) {
+	private static class AccessorMatcher extends ScalaMatcher {
+
+		@Override
+		void ignoreMatches(final MethodNode methodNode,
+				final IFilterContext context, final IFilterOutput output) {
+
 			firstIsALoad0(methodNode);
 
 			nextIs(Opcodes.GETFIELD);
@@ -79,11 +85,14 @@ public class ScalaAccessorFilter extends ScalaFilter {
 			if (cursor == null
 					|| !methodNode.name.equals(field.name)
 					|| !methodNode.desc.equals("()" + field.desc)) {
-				return false;
+				return;
 			}
 
 			cursor = forward(cursor, RETURN_OPCODES);
-			return cursor != null;
+			if (cursor != null) {
+				final InsnList instructions = methodNode.instructions;
+				output.ignore(instructions.getFirst(), instructions.getLast());
+			}
 		}
 	}
 
@@ -140,10 +149,14 @@ public class ScalaAccessorFilter extends ScalaFilter {
 	 * - method does nothing as just setting the corresponding field
 	 * </p>
 	 */
-	private static class MutatorMatcher extends AbstractMatcher {
-		public boolean match(final MethodNode methodNode) {
+	private static class MutatorMatcher extends ScalaMatcher {
+
+		@Override
+		void ignoreMatches(final MethodNode methodNode,
+				final IFilterContext context, final IFilterOutput output) {
+
 			if (!methodNode.name.endsWith(MUTATOR_SUFFIX)) {
-				return false;
+				return;
 			}
 
 			firstIsALoad0(methodNode);
@@ -154,11 +167,14 @@ public class ScalaAccessorFilter extends ScalaFilter {
 			if (cursor == null
 					|| !methodNode.name.equals(field.name + MUTATOR_SUFFIX)
 					|| !methodNode.desc.equals("(" + field.desc + ")V")) {
-				return false;
+				return;
 			}
 
 			nextIs(Opcodes.RETURN);
-			return cursor != null;
+			if (cursor != null) {
+				final InsnList instructions = methodNode.instructions;
+				output.ignore(instructions.getFirst(), instructions.getLast());
+			}
 		}
 	}
 

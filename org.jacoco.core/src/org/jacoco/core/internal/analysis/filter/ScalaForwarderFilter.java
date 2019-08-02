@@ -12,14 +12,11 @@
 package org.jacoco.core.internal.analysis.filter;
 
 import java.util.Arrays;
-import java.util.Iterator;
+import java.util.Collection;
 
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -39,12 +36,14 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class ScalaForwarderFilter extends ScalaFilter {
 
-	public void filterInternal(final MethodNode methodNode,
-			final IFilterContext context, final IFilterOutput output) {
-		new StaticForwarderMatcher().ignoreMatches(methodNode, context, output);
-		new TraitForwarderMatcher().ignoreMatches(methodNode, context, output);
-		new ExtensionForwarderMatcher().ignoreMatches(methodNode, context, output);
-		new ImplicitFactoryMatcher().ignoreMatches(methodNode, context, output);
+	@Override
+	Collection<? extends ScalaMatcher> getMatchers() {
+		return Arrays.asList(
+				new StaticForwarderMatcher(),
+				new TraitForwarderMatcher(),
+				new ExtensionForwarderMatcher(),
+				new ImplicitFactoryMatcher()
+		);
 	}
 
 	/**
@@ -71,7 +70,9 @@ public class ScalaForwarderFilter extends ScalaFilter {
 	 * }
 	 * }</pre>
 	 */
-	private static class StaticForwarderMatcher extends AbstractMatcher {
+	private static class StaticForwarderMatcher extends ScalaMatcher {
+
+		@Override
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
 			final InsnList instructions = methodNode.instructions;
@@ -102,7 +103,7 @@ public class ScalaForwarderFilter extends ScalaFilter {
 			if (cursor == null) {
 				return;
 			}
-			if (Arrays.binarySearch(RETURN_OPCODES, cursor.getOpcode()) >= 0) {
+			if (RETURN_OPCODES.contains(cursor.getOpcode())) {
 				output.ignore(instructions.getFirst(), instructions.getLast());
 			}
 		}
@@ -136,7 +137,9 @@ public class ScalaForwarderFilter extends ScalaFilter {
 	 * }
 	 * }</pre>
 	 */
-	private static class TraitForwarderMatcher extends AbstractMatcher {
+	private static class TraitForwarderMatcher extends ScalaMatcher {
+
+		@Override
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
 			firstIsALoad0(methodNode);
@@ -154,7 +157,7 @@ public class ScalaForwarderFilter extends ScalaFilter {
 			if (cursor == null) {
 				return;
 			}
-			if (Arrays.binarySearch(RETURN_OPCODES, cursor.getOpcode()) >= 0) {
+			if (RETURN_OPCODES.contains(cursor.getOpcode())) {
 				final InsnList instructions = methodNode.instructions;
 				output.ignore(instructions.getFirst(), instructions.getLast());
 			}
@@ -194,7 +197,9 @@ public class ScalaForwarderFilter extends ScalaFilter {
 	 * This matcher attempts to filter "foo" method from the value class that
 	 * is created due to its existence in the corresponding companion object.
 	 */
-	private static class ExtensionForwarderMatcher extends AbstractMatcher {
+	private static class ExtensionForwarderMatcher extends ScalaMatcher {
+
+		@Override
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
 			final InsnList instructions = methodNode.instructions;
@@ -221,7 +226,7 @@ public class ScalaForwarderFilter extends ScalaFilter {
 			if (cursor == null) {
 				return;
 			}
-			if (Arrays.binarySearch(RETURN_OPCODES, cursor.getOpcode()) >= 0) {
+			if (RETURN_OPCODES.contains(cursor.getOpcode())) {
 				output.ignore(instructions.getFirst(), instructions.getLast());
 			}
 		}
@@ -262,7 +267,9 @@ public class ScalaForwarderFilter extends ScalaFilter {
 	 * }
 	 * }</pre>
 	 */
-	private static class ImplicitFactoryMatcher extends AbstractMatcher {
+	private static class ImplicitFactoryMatcher extends ScalaMatcher {
+
+		@Override
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
 			final InsnList instructions = methodNode.instructions;
@@ -286,7 +293,7 @@ public class ScalaForwarderFilter extends ScalaFilter {
 			if (cursor == null) {
 				return;
 			}
-			if (Arrays.binarySearch(RETURN_OPCODES, cursor.getOpcode()) >= 0) {
+			if (RETURN_OPCODES.contains(cursor.getOpcode())) {
 				output.ignore(instructions.getFirst(), instructions.getLast());
 			}
 		}

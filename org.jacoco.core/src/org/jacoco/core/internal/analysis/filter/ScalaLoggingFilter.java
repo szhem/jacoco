@@ -12,6 +12,9 @@
 
 package org.jacoco.core.internal.analysis.filter;
 
+import java.util.Collection;
+import java.util.Collections;
+
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
@@ -30,12 +33,16 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class ScalaLoggingFilter extends ScalaFilter {
 
-	public void filterInternal(final MethodNode methodNode,
-			final IFilterContext context, final IFilterOutput output) {
-		new LoggingEnabledMatcher().ignoreMatches(methodNode, context, output);
+	@Override
+	Collection<? extends ScalaMatcher> getMatchers() {
+		return Collections.singletonList(
+				new LoggingEnabledMatcher()
+		);
 	}
 
-	private static class LoggingEnabledMatcher extends AbstractMatcher {
+	private static class LoggingEnabledMatcher extends ScalaMatcher {
+
+		@Override
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
 			final InsnList instructions = methodNode.instructions;

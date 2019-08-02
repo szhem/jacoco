@@ -11,7 +11,12 @@
  *******************************************************************************/
 package org.jacoco.core.internal.analysis.filter;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.jacoco.core.internal.instr.InstrSupport;
 import org.junit.Assert;
@@ -28,10 +33,16 @@ import org.objectweb.asm.tree.MethodNode;
 public class ScalaFilterTest extends FilterTestBase {
 
 	private final ScalaFilter filter = new ScalaFilter() {
-		void filterInternal(final MethodNode methodNode,
-				final IFilterContext context, final IFilterOutput output) {
-			final InsnList instructions = methodNode.instructions;
-			output.ignore(instructions.getFirst(), instructions.getLast());
+		Collection<? extends ScalaMatcher> getMatchers() {
+			return Collections.singleton(new ScalaMatcher() {
+				@Override
+				void ignoreMatches(final MethodNode methodNode,
+						final IFilterContext context,
+						final IFilterOutput output) {
+					final InsnList instructions = methodNode.instructions;
+					output.ignore(instructions.getFirst(), instructions.getLast());
+				}
+			});
 		}
 	};
 
@@ -155,12 +166,6 @@ public class ScalaFilterTest extends FilterTestBase {
 	@Test
 	public void isModuleClass_should_not_succeed_on_non_module_class() {
 		context.className = "Module";
-		Assert.assertFalse(ScalaFilter.isModuleClass(context));
-	}
-
-	@Test
-	public void isModuleClass_should_not_succeed_on_absent_module_field() {
-		context.className = "Module$";
 		Assert.assertFalse(ScalaFilter.isModuleClass(context));
 	}
 
@@ -417,6 +422,127 @@ public class ScalaFilterTest extends FilterTestBase {
 	public void getDesc_should_return_desc_by_class() {
 		String desc = ScalaFilter.getDesc("java/lang/String");
 		Assert.assertEquals("Ljava/lang/String;", desc);
+	}
+
+	@Test
+	public void getMethodsByLine_should_return_methods_grouped_by_line() {
+		final MethodNode m1 = new MethodNode(Opcodes.ACC_PUBLIC, "m1", "()V",
+				null, null);
+
+		Label m1Line = new Label();
+		m1.visitLabel(m1Line);
+		m1.visitLineNumber(0, m1Line);
+		m1.visitVarInsn(Opcodes.ALOAD, 0);
+
+		m1Line = new Label();
+		m1.visitLabel(m1Line);
+		m1.visitLineNumber(1, m1Line);
+		m1.visitVarInsn(Opcodes.ALOAD, 1);
+
+		m1Line = new Label();
+		m1.visitLabel(m1Line);
+		m1.visitLineNumber(2, m1Line);
+		m1.visitVarInsn(Opcodes.ALOAD, 2);
+
+		m1Line = new Label();
+		m1.visitLabel(m1Line);
+		m1.visitLineNumber(3, m1Line);
+		m1.visitInsn(Opcodes.RETURN);
+
+		final MethodNode m2 = new MethodNode(Opcodes.ACC_PUBLIC, "m2", "()V",
+				null, null);
+
+		Label m2Line = new Label();
+		m2.visitLabel(m2Line);
+		m2.visitLineNumber(4, m2Line);
+		m2.visitVarInsn(Opcodes.ALOAD, 0);
+
+		m2.visitLabel(m2Line);
+		m2.visitLineNumber(4, m2Line);
+		m2.visitInsn(Opcodes.RETURN);
+
+		final MethodNode m3 = new MethodNode(Opcodes.ACC_PUBLIC, "m3", "()V",
+				null, null);
+
+		m3.visitLabel(m2Line);
+		m3.visitLineNumber(4, m2Line);
+		m3.visitVarInsn(Opcodes.ALOAD, 0);
+
+		m3.visitLabel(m2Line);
+		m3.visitLineNumber(4, m2Line);
+		m3.visitInsn(Opcodes.RETURN);
+
+		context.classMethods.add(m1);
+		context.classMethods.add(m2);
+		context.classMethods.add(m3);
+
+		Map<Integer, Set<MethodNode>> methods
+				= ScalaFilter.getMethodsByLine(context);
+
+		Assert.assertTrue(methods.get(1).contains(m1));
+		Assert.assertTrue(methods.get(2).contains(m1));
+		Assert.assertTrue(methods.get(3).contains(m1));
+		Assert.assertTrue(methods.get(4).containsAll(Arrays.asList(m2, m3)));
+	}
+
+	@Test
+	public void getSameLineMethodsCount_should_return_methods_count_on_a_line() {
+		final MethodNode m1 = new MethodNode(Opcodes.ACC_PUBLIC, "m1", "()V",
+				null, null);
+
+		Label m1Line = new Label();
+		m1.visitLabel(m1Line);
+		m1.visitLineNumber(0, m1Line);
+		m1.visitVarInsn(Opcodes.ALOAD, 0);
+
+		m1Line = new Label();
+		m1.visitLabel(m1Line);
+		m1.visitLineNumber(1, m1Line);
+		m1.visitVarInsn(Opcodes.ALOAD, 1);
+
+		m1Line = new Label();
+		m1.visitLabel(m1Line);
+		m1.visitLineNumber(2, m1Line);
+		m1.visitVarInsn(Opcodes.ALOAD, 2);
+
+		m1Line = new Label();
+		m1.visitLabel(m1Line);
+		m1.visitLineNumber(3, m1Line);
+		m1.visitInsn(Opcodes.RETURN);
+
+		final MethodNode m2 = new MethodNode(Opcodes.ACC_PUBLIC, "m2", "()V",
+				null, null);
+
+		Label m2Line = new Label();
+		m2.visitLabel(m2Line);
+		m2.visitLineNumber(4, m2Line);
+		m2.visitVarInsn(Opcodes.ALOAD, 0);
+
+		m2.visitLabel(m2Line);
+		m2.visitLineNumber(4, m2Line);
+		m2.visitInsn(Opcodes.RETURN);
+
+		final MethodNode m3 = new MethodNode(Opcodes.ACC_PUBLIC, "m3", "()V",
+				null, null);
+
+		m3.visitLabel(m2Line);
+		m3.visitLineNumber(4, m2Line);
+		m3.visitVarInsn(Opcodes.ALOAD, 0);
+
+		m3.visitLabel(m2Line);
+		m3.visitLineNumber(4, m2Line);
+		m3.visitInsn(Opcodes.RETURN);
+
+		context.classMethods.add(m1);
+		context.classMethods.add(m2);
+		context.classMethods.add(m3);
+
+		Map<MethodNode, Integer> counts = ScalaFilter
+				.getSameLineMethodsCount(context);
+
+		Assert.assertEquals(Integer.valueOf(1), counts.get(m1));
+		Assert.assertEquals(Integer.valueOf(2), counts.get(m2));
+		Assert.assertEquals(Integer.valueOf(2), counts.get(m3));
 	}
 
 }

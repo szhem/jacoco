@@ -12,6 +12,7 @@
 package org.jacoco.core.internal.analysis.filter;
 
 import java.util.Arrays;
+import java.util.Collection;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -22,11 +23,12 @@ import org.objectweb.asm.tree.MethodNode;
 
 public class ScalaValueClassFilter extends ScalaFilter {
 
-	public void filterInternal(final MethodNode methodNode,
-			final IFilterContext context, final IFilterOutput output) {
-		new ConstructorMatcher().ignoreMatches(methodNode, context, output);
-		new ExtensionDelegateMatcher()
-				.ignoreMatches(methodNode, context, output);
+	@Override
+	Collection<? extends ScalaMatcher> getMatchers() {
+		return Arrays.asList(
+				new ConstructorMatcher(),
+				new ExtensionDelegateMatcher()
+		);
 	}
 
 	/**
@@ -76,8 +78,9 @@ public class ScalaValueClassFilter extends ScalaFilter {
 	 * generated companion object.
 	 * Such methods in value classes are usually not invoked at all.
 	 */
-	private static class ExtensionDelegateMatcher extends AbstractMatcher {
+	private static class ExtensionDelegateMatcher extends ScalaMatcher {
 
+		@Override
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
 			final InsnList instructions = methodNode.instructions;
@@ -106,10 +109,10 @@ public class ScalaValueClassFilter extends ScalaFilter {
 					final String calledName = methodCalled.name;
 
 					final boolean extensionMethod =
-							methodName.endsWith(EXTENSION_METHOD_SUFFIX)
+							methodName.endsWith(EXTENSION_SUFFIX)
 							&& methodName.equals(calledName);
 					final boolean simpleMethod = calledName
-							.equals(methodName + EXTENSION_METHOD_SUFFIX);
+							.equals(methodName + EXTENSION_SUFFIX);
 
 					return extensionMethod || simpleMethod;
 				}
@@ -123,7 +126,7 @@ public class ScalaValueClassFilter extends ScalaFilter {
 			if (cursor == null) {
 				return;
 			}
-			if (Arrays.binarySearch(RETURN_OPCODES, cursor.getOpcode()) >= 0) {
+			if (RETURN_OPCODES.contains(cursor.getOpcode())) {
 				output.ignore(instructions.getFirst(), instructions.getLast());
 			}
 		}
@@ -167,7 +170,9 @@ public class ScalaValueClassFilter extends ScalaFilter {
 	 * This matcher attempts to filter constructors of value classes which may
 	 * never be called.
 	 */
-	public static class ConstructorMatcher extends AbstractMatcher {
+	public static class ConstructorMatcher extends ScalaMatcher {
+
+		@Override
 		void ignoreMatches(final MethodNode methodNode,
 				final IFilterContext context, final IFilterOutput output) {
 			if (!INIT_NAME.equals(methodNode.name)) {
@@ -176,7 +181,7 @@ public class ScalaValueClassFilter extends ScalaFilter {
 
 			boolean hasExtensionMethods = false;
 			for (MethodNode method : context.getClassMethods()) {
-				if (method.name.endsWith(EXTENSION_METHOD_SUFFIX)) {
+				if (method.name.endsWith(EXTENSION_SUFFIX)) {
 					hasExtensionMethods = true;
 					break;
 				}

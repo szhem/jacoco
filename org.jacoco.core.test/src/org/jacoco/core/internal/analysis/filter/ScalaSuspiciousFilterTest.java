@@ -16,6 +16,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
@@ -78,14 +81,23 @@ public class ScalaSuspiciousFilterTest extends FilterTestBase {
 
 	@Test
 	public void should_filter_outer_null_checks() {
+		context.classFields.add(new FieldNode(
+			Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL, "$outer", "LMain;", null,
+				new Object()));
+
 		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION,
 				Opcodes.ACC_PUBLIC, "<init>",
 				"(LMain;)V", null, null);
+		m.localVariables.add(new LocalVariableNode("$outer", "LMain;", null,
+				new LabelNode(new Label()), new LabelNode(new Label()), 1));
 
 		m.visitVarInsn(Opcodes.ALOAD, 1);
-		m.visitInsn(Opcodes.IFNONNULL);
+
+		final Label nullCheck = new Label();
+		m.visitJumpInsn(Opcodes.IFNONNULL, nullCheck);
 		m.visitInsn(Opcodes.ACONST_NULL);
 		m.visitInsn(Opcodes.ATHROW);
+		m.visitLabel(nullCheck);
 
 		final Range range =
 				new Range(m.instructions.getFirst(), m.instructions.getLast());
@@ -99,7 +111,7 @@ public class ScalaSuspiciousFilterTest extends FilterTestBase {
 				"()V", false);
 		m.visitInsn(Opcodes.RETURN);
 
-		filter.filterInternal(m, context, output);
+		filter.filter(m, context, output);
 
 		assertIgnored(range);
 	}

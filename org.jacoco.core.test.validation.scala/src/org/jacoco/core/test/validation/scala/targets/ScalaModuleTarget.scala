@@ -33,10 +33,24 @@ object ScalaModuleTarget {
 
   case class CaseClass(v: String) // assertFullyCovered()
 
+  def localObject(): Unit = {
+    object LocalObject // assertFullyCovered()
+    LocalObject // assertFullyCovered()
+  }
+
+  class InnerClass {
+    def localObject(): Unit = {
+      object LocalObject // assertFullyCovered()
+      LocalObject // assertFullyCovered()
+    }
+  }
+
   def main(args: Array[String]): Unit = {
     ScalaModule
     SerializableScalaModule
     AnyValScalaModule
     CaseClass("foobar")
+    localObject()
+    new InnerClass().localObject()
   }
 }
