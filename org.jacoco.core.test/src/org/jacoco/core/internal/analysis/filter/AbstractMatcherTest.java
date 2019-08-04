@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.jacoco.core.internal.analysis.filter;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 
@@ -18,7 +20,12 @@ import org.jacoco.core.internal.instr.InstrSupport;
 import org.junit.Test;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
@@ -72,6 +79,37 @@ public class AbstractMatcherTest {
 		// should not do anything when cursor is null
 		matcher.cursor = null;
 		matcher.nextIs(Opcodes.NOP);
+	}
+
+	@Test
+	public void nextIsPredicate() {
+		final AbstractMatcher.Predicate predicate
+				= new AbstractMatcher.Predicate() {
+			public boolean matches(AbstractInsnNode node) {
+				if (node.getOpcode() == Opcodes.ACONST_NULL) {
+					return true;
+				}
+				if (node.getOpcode() == Opcodes.NEW) {
+					final String typeDesc = ((TypeInsnNode) node).desc;
+					return typeDesc.equals(Type.getInternalName(
+							NullPointerException.class));
+				}
+				return false;
+			}
+		};
+
+		m.visitInsn(Opcodes.NOP);
+		m.visitTypeInsn(Opcodes.NEW,
+				Type.getInternalName(NullPointerException.class));
+		m.visitInsn(Opcodes.ACONST_NULL);
+
+		matcher.cursor = m.instructions.getFirst();
+
+		matcher.nextIs(predicate);
+		assertNotNull(matcher.cursor);
+
+		matcher.nextIs(predicate);
+		assertNotNull(matcher.cursor);
 	}
 
 	@Test
@@ -217,6 +255,172 @@ public class AbstractMatcherTest {
 		m.visitVarInsn(Opcodes.ALOAD, 0);
 		matcher.firstIsALoad0(m);
 		assertSame(m.instructions.getLast(), matcher.cursor);
+	}
+
+	@Test
+	public void backwardOpcode() {
+		m.visitInsn(Opcodes.NOP);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitFieldInsn(Opcodes.GETFIELD, "owner", "name1", "()J");
+		m.visitVarInsn(Opcodes.ALOAD, 1);
+		m.visitFieldInsn(Opcodes.GETFIELD, "owner", "name2", "()V");
+		m.visitInsn(Opcodes.RETURN);
+
+		// should find the first insn node with the provided opcode
+		FieldInsnNode fieldNode = AbstractMatcher.backward(
+				m.instructions.getLast(), Opcodes.GETFIELD);
+		assertEquals("owner", fieldNode.owner);
+		assertEquals("name2", fieldNode.name);
+		assertEquals("()V", fieldNode.desc);
+
+		// should find the first insn node if multiple opcodes provided
+		VarInsnNode varNode = AbstractMatcher.backward(
+				m.instructions.getLast(), Opcodes.ALOAD, Opcodes.NOP);
+		assertEquals(1, varNode.var);
+
+		// should return null if no insn node found
+		MethodInsnNode methodNode = AbstractMatcher.backward(
+				m.instructions.getLast(), Opcodes.INVOKESTATIC);
+		assertNull(methodNode);
+
+		// should return current insn node node if it's has the necessary opcode
+		AbstractInsnNode insn = AbstractMatcher.backward(
+				fieldNode, Opcodes.GETFIELD);
+		assertSame(fieldNode, insn);
+	}
+
+	@Test
+	public void forwardOpcode() {
+		m.visitInsn(Opcodes.NOP);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitFieldInsn(Opcodes.GETFIELD, "owner", "name1", "()J");
+		m.visitVarInsn(Opcodes.ALOAD, 1);
+		m.visitFieldInsn(Opcodes.GETFIELD, "owner", "name2", "()V");
+		m.visitInsn(Opcodes.RETURN);
+
+		// should find the first insn node with the provided opcode
+		FieldInsnNode fieldNode = AbstractMatcher.forward(
+				m.instructions.getFirst(), Opcodes.GETFIELD);
+		assertEquals("owner", fieldNode.owner);
+		assertEquals("name1", fieldNode.name);
+		assertEquals("()J", fieldNode.desc);
+
+		// should find the first insn node if multiple opcodes provided
+		VarInsnNode varNode = AbstractMatcher.forward(
+				m.instructions.getFirst(), Opcodes.ALOAD, Opcodes.GETFIELD);
+		assertEquals(0, varNode.var);
+
+		// should return null if no insn node found
+		MethodInsnNode methodNode = AbstractMatcher.forward(
+				m.instructions.getFirst(), Opcodes.INVOKESTATIC);
+		assertNull(methodNode);
+
+		// should return current insn node node if it's has the necessary opcode
+		AbstractInsnNode insn = AbstractMatcher.forward(
+				fieldNode, Opcodes.GETFIELD);
+		assertSame(fieldNode, insn);
+	}
+
+	@Test
+	public void backward() {
+		m.visitInsn(Opcodes.NOP);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitFieldInsn(Opcodes.GETFIELD, "owner", "name1", "()J");
+		m.visitVarInsn(Opcodes.ALOAD, 1);
+		m.visitFieldInsn(Opcodes.GETFIELD, "owner", "name2", "()V");
+		m.visitInsn(Opcodes.RETURN);
+
+		// should find the first insn node with the provided opcode
+		FieldInsnNode fieldNode = AbstractMatcher.backward(
+				m.instructions.getLast(), new AbstractMatcher.Predicate() {
+					public boolean matches(AbstractInsnNode node) {
+						return node.getType() == AbstractInsnNode.FIELD_INSN;
+					}
+				});
+		assertEquals("owner", fieldNode.owner);
+		assertEquals("name2", fieldNode.name);
+		assertEquals("()V", fieldNode.desc);
+
+		// should return null if no insn node found
+		MethodInsnNode methodNode = AbstractMatcher.backward(
+				m.instructions.getLast(), new AbstractMatcher.Predicate() {
+					public boolean matches(AbstractInsnNode node) {
+						return node.getType() == AbstractInsnNode.METHOD_INSN;
+					}
+				});
+		assertNull(methodNode);
+
+		// should return current insn node node if it's has the necessary opcode
+		AbstractInsnNode insn = AbstractMatcher.backward(
+				fieldNode, new AbstractMatcher.Predicate() {
+					public boolean matches(AbstractInsnNode node) {
+						return node.getOpcode() == Opcodes.GETFIELD
+								&& "name2".equals(((FieldInsnNode) node).name);
+					}
+				});
+		assertSame(fieldNode, insn);
+	}
+
+	@Test
+	public void forward() {
+		m.visitInsn(Opcodes.NOP);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitFieldInsn(Opcodes.GETFIELD, "owner", "name1", "()J");
+		m.visitVarInsn(Opcodes.ALOAD, 1);
+		m.visitFieldInsn(Opcodes.GETFIELD, "owner", "name2", "()V");
+		m.visitInsn(Opcodes.RETURN);
+
+		// should find the first insn node with the provided opcode
+		FieldInsnNode fieldNode = AbstractMatcher.forward(
+				m.instructions.getFirst(), new AbstractMatcher.Predicate() {
+					public boolean matches(AbstractInsnNode node) {
+						return node.getType() == AbstractInsnNode.FIELD_INSN;
+					}
+				});
+		assertEquals("owner", fieldNode.owner);
+		assertEquals("name1", fieldNode.name);
+		assertEquals("()J", fieldNode.desc);
+
+		// should return null if no insn node found
+		MethodInsnNode methodNode = AbstractMatcher.backward(
+				m.instructions.getFirst(), new AbstractMatcher.Predicate() {
+					public boolean matches(AbstractInsnNode node) {
+						return node.getType() == AbstractInsnNode.METHOD_INSN;
+					}
+				});
+		assertNull(methodNode);
+
+		// should return current insn node node if it's has the necessary opcode
+		AbstractInsnNode insn = AbstractMatcher.backward(
+				fieldNode, new AbstractMatcher.Predicate() {
+					public boolean matches(AbstractInsnNode node) {
+						return node.getOpcode() == Opcodes.GETFIELD
+								&& "name1".equals(((FieldInsnNode) node).name);
+					}
+				});
+		assertSame(fieldNode, insn);
+	}
+
+	@Test
+	public void count() {
+		m.visitInsn(Opcodes.NOP);
+		m.visitVarInsn(Opcodes.ALOAD, 0);
+		m.visitFieldInsn(Opcodes.GETFIELD, "owner", "name1", "()J");
+		m.visitVarInsn(Opcodes.ALOAD, 1);
+		m.visitFieldInsn(Opcodes.GETFIELD, "owner", "name2", "()V");
+		m.visitInsn(Opcodes.RETURN);
+
+		final int varInsns = AbstractMatcher.count(m.instructions.getFirst(),
+				new AbstractMatcher.OpcodePredicate(Opcodes.ALOAD));
+		assertEquals(2, varInsns);
+
+		final int fieldInsns = AbstractMatcher.count(m.instructions.getFirst(),
+				new AbstractMatcher.OpcodePredicate(Opcodes.GETFIELD));
+		assertEquals(2, fieldInsns);
+
+		final int methodInsns = AbstractMatcher.count(m.instructions.getFirst(),
+				new AbstractMatcher.OpcodePredicate(Opcodes.INVOKEVIRTUAL));
+		assertEquals(0, methodInsns);
 	}
 
 }

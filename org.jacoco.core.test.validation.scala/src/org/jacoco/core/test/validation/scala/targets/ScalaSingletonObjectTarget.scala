@@ -14,7 +14,7 @@ package org.jacoco.core.test.validation.scala.targets
 /**
  * This test target is singleton object.
  */
-object ScalaSingletonObjectTarget { // assertFullyCovered()
+object ScalaSingletonObjectTarget { // assertEmpty()
 
   def main(args: Array[String]): Unit = { // assertFullyCovered()
   } // assertEmpty()

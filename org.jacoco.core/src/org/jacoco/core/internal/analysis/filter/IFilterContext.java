@@ -11,7 +11,11 @@
  *******************************************************************************/
 package org.jacoco.core.internal.analysis.filter;
 
+import java.util.List;
 import java.util.Set;
+
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.MethodNode;
 
 /**
  * Context information provided to filters.
@@ -29,9 +33,29 @@ public interface IFilterContext {
 	String getSuperClassName();
 
 	/**
+	 * @return vm interfaces of the enclosing class
+	 */
+	Set<String> getClassInterfaces();
+
+	/**
 	 * @return vm names of the class annotations of the enclosing class
 	 */
 	Set<String> getClassAnnotations();
+
+	/**
+	 * @return vm names of the class attributes
+	 */
+	Set<String> getClassAttributes();
+
+	/**
+	 * @return vm methods of the enclosing class
+	 */
+	List<MethodNode> getClassMethods();
+
+	/**
+	 * @return vm fields of the enclosing class
+	 */
+	List<FieldNode> getClassFields();
 
 	/**
 	 * @return file name of the corresponding source file or <code>null</code>

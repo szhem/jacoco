@@ -6,28 +6,32 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Contributors:
- *    Evgeny Mandrikov - initial API and implementation
+ *    Sergey Zhemzhitsky - initial API and implementation
  *
  *******************************************************************************/
 package org.jacoco.core.test.validation.scala.targets
 
-import org.jacoco.core.test.validation.targets.Stubs.{exec, noexec, nop}
+import org.jacoco.core.test.validation.targets.Stubs.nop
 
 /**
- * Test target for anonymous functions.
- */
-object ScalaAnonymousFunctionTarget {
+  * Test target for scala forwarder methods.
+  */
+object ScalaTraitForwarderTarget {
+
+  trait Trait {
+    val bar = "bar" // assertFullyCovered()
+    var baz = "baz" // assertFullyCovered()
+    def foo(): Unit = {
+      nop() // assertFullyCovered()
+    }
+  }
+  class Main extends Trait // assertFullyCovered()
 
   def main(args: Array[String]): Unit = {
+    val t = new Trait {}
+    t.foo()
 
-    exec(new Runnable {
-      override def run(): Unit = nop() // assertFullyCovered()
-    })
-
-    noexec(new Runnable {
-      override def run(): Unit = nop() // assertNotCovered()
-    })
-
+    new Main
   }
 
 }

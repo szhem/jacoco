@@ -8,6 +8,7 @@
 
    Contributors:
       Evgeny Mandrikov - initial API and implementation
+      Sergey Zhemzhitsky - initial API and implementation
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
@@ -24,9 +25,23 @@
   <name>JaCoCo :: Test :: Core :: Validation Scala</name>
 
   <properties>
-    <bytecode.version>6</bytecode.version>
+    <scala.compiler.jvmTarget>${maven.compiler.target}</scala.compiler.jvmTarget>
+    <scala.210.version>2.10.7</scala.210.version>
+    <scala.211.version>2.11.12</scala.211.version>
+    <scala.212.version>2.12.8</scala.212.version>
+    <scala.213.version>2.13.0</scala.213.version>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.scala-lang</groupId>
+        <artifactId>scala-compiler</artifactId>
+        <version>${scala.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  
   <dependencies>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -35,8 +50,7 @@
     </dependency>
     <dependency>
       <groupId>org.scala-lang</groupId>
-      <artifactId>scala-library</artifactId>
-      <version>2.12.8</version>
+      <artifactId>scala-compiler</artifactId>
     </dependency>
   </dependencies>
 
@@ -46,6 +60,9 @@
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
         <version>4.0.2</version>
+        <configuration>
+          <target>${scala.compiler.jvmTarget}</target>
+        </configuration>
         <executions>
           <execution>
             <id>compile</id>
@@ -58,4 +75,33 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>scala210</id>
+      <properties>
+        <scala.version>${scala.210.version}</scala.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>scala211</id>
+      <properties>
+        <scala.version>${scala.211.version}</scala.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>scala212</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <scala.version>${scala.212.version}</scala.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>scala213</id>
+      <properties>
+        <scala.version>${scala.213.version}</scala.version>
+      </properties>
+    </profile>
+  </profiles>
 </project>

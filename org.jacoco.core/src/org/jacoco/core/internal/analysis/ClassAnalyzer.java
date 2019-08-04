@@ -11,7 +11,11 @@
  *******************************************************************************/
 package org.jacoco.core.internal.analysis;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import org.jacoco.core.internal.analysis.filter.Filters;
@@ -21,8 +25,10 @@ import org.jacoco.core.internal.flow.ClassProbesVisitor;
 import org.jacoco.core.internal.flow.MethodProbesVisitor;
 import org.jacoco.core.internal.instr.InstrSupport;
 import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.Attribute;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
@@ -35,7 +41,13 @@ public class ClassAnalyzer extends ClassProbesVisitor
 	private final boolean[] probes;
 	private final StringPool stringPool;
 
+	private final Set<String> classInterfaces = new HashSet<String>();
 	private final Set<String> classAnnotations = new HashSet<String>();
+	private final Set<String> classAttributes = new HashSet<String>();
+	private final List<FieldNode> classFields = new ArrayList<FieldNode>();
+	private final List<MethodNode> classMethods = new ArrayList<MethodNode>();
+
+	private final List<InstructionsBuilder> insnBuilders = new ArrayList<InstructionsBuilder>();
 
 	private String sourceDebugExtension;
 
@@ -66,6 +78,7 @@ public class ClassAnalyzer extends ClassProbesVisitor
 		coverage.setSignature(stringPool.get(signature));
 		coverage.setSuperName(stringPool.get(superName));
 		coverage.setInterfaces(stringPool.get(interfaces));
+		classInterfaces.addAll(Arrays.asList(coverage.getInterfaceNames()));
 	}
 
 	@Override
@@ -96,8 +109,8 @@ public class ClassAnalyzer extends ClassProbesVisitor
 			public void accept(final MethodNode methodNode,
 					final MethodVisitor methodVisitor) {
 				super.accept(methodNode, methodVisitor);
-				addMethodCoverage(stringPool.get(name), stringPool.get(desc),
-						stringPool.get(signature), builder, methodNode);
+				classMethods.add(methodNode);
+				insnBuilders.add(builder);
 			}
 		};
 	}
@@ -114,6 +127,7 @@ public class ClassAnalyzer extends ClassProbesVisitor
 		mcc.calculate(mc);
 
 		if (mc.containsCode()) {
+			System.out.println(getClassName() + ":  " + name);
 			// Only consider methods that actually contain code
 			coverage.addMethod(mc);
 		}
@@ -124,12 +138,32 @@ public class ClassAnalyzer extends ClassProbesVisitor
 	public FieldVisitor visitField(final int access, final String name,
 			final String desc, final String signature, final Object value) {
 		InstrSupport.assertNotInstrumented(name, coverage.getName());
+		classFields.add(new FieldNode(access, name, desc, signature, value));
 		return super.visitField(access, name, desc, signature, value);
 	}
 
 	@Override
 	public void visitTotalProbeCount(final int count) {
 		// nothing to do
+	}
+
+	@Override
+	public void visitAttribute(Attribute attribute) {
+		super.visitAttribute(attribute);
+		classAttributes.add(attribute.type);
+	}
+
+	@Override
+	public void visitEnd() {
+		super.visitEnd();
+		final Iterator<MethodNode> methods = classMethods.iterator();
+		final Iterator<InstructionsBuilder> builders = insnBuilders.iterator();
+		while (methods.hasNext() && builders.hasNext()) {
+			MethodNode methodNode = methods.next();
+			InstructionsBuilder builder = builders.next();
+			addMethodCoverage(methodNode.name, methodNode.desc,
+					methodNode.signature, builder, methodNode);
+		}
 	}
 
 	// IFilterContext implementation
@@ -142,8 +176,24 @@ public class ClassAnalyzer extends ClassProbesVisitor
 		return coverage.getSuperName();
 	}
 
+	public Set<String> getClassInterfaces() {
+		return classInterfaces;
+	}
+
 	public Set<String> getClassAnnotations() {
 		return classAnnotations;
+	}
+
+	public Set<String> getClassAttributes() {
+		return classAttributes;
+	}
+
+	public List<MethodNode> getClassMethods() {
+		return classMethods;
+	}
+
+	public List<FieldNode> getClassFields() {
+		return classFields;
 	}
 
 	public String getSourceFileName() {

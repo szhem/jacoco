@@ -209,4 +209,12 @@ public abstract class ValidationTestBase {
 				source.getCoverage().getMethodCounter().getTotalCount());
 	}
 
+	protected void assertMethodCount(final int missedMethods,
+			final int coveredMethods) {
+		assertEquals(missedMethods,
+				source.getCoverage().getMethodCounter().getMissedCount());
+		assertEquals(coveredMethods,
+				source.getCoverage().getMethodCounter().getCoveredCount());
+	}
+
 }

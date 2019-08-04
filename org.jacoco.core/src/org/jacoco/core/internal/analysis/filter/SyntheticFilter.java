@@ -48,6 +48,11 @@ public final class SyntheticFilter implements IFilter {
 				return;
 			}
 		}
+		
+		if (ScalaFilter.isScalaClass(context)
+				&& methodNode.name.startsWith(ScalaFilter.ANON_FUN_SUFFIX)) {
+			return;
+		}
 
 		output.ignore(methodNode.instructions.getFirst(),
 				methodNode.instructions.getLast());

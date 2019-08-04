@@ -11,8 +11,12 @@
  *******************************************************************************/
 package org.jacoco.core.internal.analysis.filter;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -123,6 +127,20 @@ abstract class AbstractMatcher {
 	}
 
 	/**
+	 * Moves {@link #cursor} to next instruction if it has matched a given
+	 * predicate, otherwise sets it to <code>null</code>.
+	 */
+	final void nextIs(final Predicate predicate) {
+		next();
+		if (cursor == null) {
+			return;
+		}
+		if (!predicate.matches(cursor)) {
+			cursor = null;
+		}
+	}
+
+	/**
 	 * Moves {@link #cursor} to next instruction.
 	 */
 	final void next() {
@@ -142,6 +160,64 @@ abstract class AbstractMatcher {
 	}
 
 	/**
+	 * Returns first instruction preceding a given one that matches one of the
+	 * provided opcodes.
+	 */
+	final <T extends AbstractInsnNode> T backward(final Integer... opcodes) {
+		return backward(Arrays.asList(opcodes));
+	}
+
+	/**
+	 * Returns first instruction preceding a given one that matches one of the
+	 * provided opcodes.
+	 */
+	final <T extends AbstractInsnNode> T backward(
+			final Collection<Integer> opcodes) {
+		T insn = backward(cursor, opcodes);
+		cursor = insn;
+		return insn;
+	}
+
+	/**
+	 * Returns first instruction following a given one that matches one of the
+	 * provided opcodes.
+	 */
+	final <T extends AbstractInsnNode> T forward(final Integer... opcodes) {
+		return forward(Arrays.asList(opcodes));
+	}
+
+	/**
+	 * Returns first instruction following a given one that matches one of the
+	 * provided opcodes.
+	 */
+	final <T extends AbstractInsnNode> T forward(
+			final Collection<Integer> opcodes) {
+		T insn = forward(cursor, opcodes);
+		cursor = insn;
+		return insn;
+	}
+
+	/**
+	 * Returns first instruction preceding a given one that matches a provided
+	 * predicate.
+	 */
+	final <T extends AbstractInsnNode> T backward(final Predicate predicate) {
+		T insn = backward(cursor, predicate);
+		cursor = insn;
+		return insn;
+	}
+
+	/**
+	 * Returns first instruction following a given one that matches a provided
+	 * predicate.
+	 */
+	final <T extends AbstractInsnNode> T forward(final Predicate predicate) {
+		T insn = forward(cursor, predicate);
+		cursor = insn;
+		return insn;
+	}
+
+	/**
 	 * Returns first instruction from given and following it that is not
 	 * {@link AbstractInsnNode#FRAME}, {@link AbstractInsnNode#LABEL},
 	 * {@link AbstractInsnNode#LINE}.
@@ -154,5 +230,112 @@ abstract class AbstractMatcher {
 		}
 		return cursor;
 	}
+
+	/**
+	 * Returns first instruction preceding a given one that matches one of the
+	 * provided opcodes.
+	 */
+	static <T extends AbstractInsnNode> T backward(
+			final AbstractInsnNode cursor, final Integer... opcodes) {
+		return backward(cursor, new OpcodePredicate(opcodes));
+	}
+
+	/**
+	 * Returns first instruction preceding a given one that matches one of the
+	 * provided opcodes.
+	 */
+	static <T extends AbstractInsnNode> T backward(
+			final AbstractInsnNode cursor, final Collection<Integer> opcodes) {
+		return backward(cursor, new OpcodePredicate(opcodes));
+	}
+
+	/**
+	 * Returns first instruction following a given one that matches one of the
+	 * provided opcodes.
+	 */
+	static <T extends AbstractInsnNode> T forward(
+			final AbstractInsnNode cursor, final Integer... opcodes) {
+		return forward(cursor, new OpcodePredicate(opcodes));
+	}
+
+	/**
+	 * Returns first instruction following a given one that matches one of the
+	 * provided opcodes.
+	 */
+	static <T extends AbstractInsnNode> T forward(
+			final AbstractInsnNode cursor, final Collection<Integer> opcodes) {
+		return forward(cursor, new OpcodePredicate(opcodes));
+	}
+
+	/**
+	 * Returns first instruction preceding a given one that matches a provided
+	 * predicate.
+	 */
+	@SuppressWarnings("unchecked")
+	static <T extends AbstractInsnNode> T backward(AbstractInsnNode cursor,
+			final Predicate predicate) {
+		while (cursor != null && !predicate.matches(cursor)) {
+			cursor = cursor.getPrevious();
+		}
+		return (T) cursor;
+	}
+
+	/**
+	 * Returns first instruction following a given one that matches a provided
+	 * predicate.
+	 */
+	@SuppressWarnings("unchecked")
+	static <T extends AbstractInsnNode> T forward(AbstractInsnNode cursor,
+			final Predicate predicate) {
+		while (cursor != null && !predicate.matches(cursor)) {
+			cursor = cursor.getNext();
+		}
+		return (T) cursor;
+	}
+
+	static int count(AbstractInsnNode cursor, final Predicate predicate) {
+		int count = 0;
+		while (cursor != null) {
+			if (predicate.matches(cursor)) {
+				count++;
+			}
+			cursor = cursor.getNext();
+		}
+		return count;
+	}
+
+	interface Predicate {
+		boolean matches(AbstractInsnNode node);
+	}
+
+	static class OpcodePredicate implements Predicate {
+		private final Set<Integer> opcodes;
+
+		OpcodePredicate(final Collection<Integer> opcodes) {
+			this.opcodes = opcodes instanceof Set
+					? (Set<Integer>) opcodes : new HashSet<Integer>(opcodes);
+		}
+
+		OpcodePredicate(final Integer... opcodes) {
+			this(Arrays.asList(opcodes));
+		}
+
+		public boolean matches(AbstractInsnNode node) {
+			return opcodes.contains(node.getOpcode());
+		}
+	}
+
+	static class TypePredicate implements Predicate {
+		private final int type;
+
+		TypePredicate(final int type) {
+			this.type = type;
+		}
+
+		public boolean matches(AbstractInsnNode node) {
+			return node.getType() == type;
+		}
+	}
+
 
 }

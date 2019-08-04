@@ -11,13 +11,12 @@
  *******************************************************************************/
 package org.jacoco.core.test.validation.scala;
 
-import org.jacoco.core.test.validation.ValidationTestBase;
 import org.jacoco.core.test.validation.scala.targets.ScalaAnonymousFunctionTarget;
 
 /**
  * Test of anonymous functions.
  */
-public class ScalaAnonymousFunctionTest extends ValidationTestBase {
+public class ScalaAnonymousFunctionTest extends ScalaTest {
 
     public ScalaAnonymousFunctionTest() {
         super(ScalaAnonymousFunctionTarget.class);

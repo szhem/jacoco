@@ -6,28 +6,29 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Contributors:
- *    Evgeny Mandrikov - initial API and implementation
+ *    Sergey Zhemzhitsky - initial API and implementation
  *
  *******************************************************************************/
 package org.jacoco.core.test.validation.scala.targets
 
-import org.jacoco.core.test.validation.targets.Stubs.{exec, noexec, nop}
+import org.jacoco.core.test.validation.targets.Stubs.nop
 
 /**
- * Test target for anonymous functions.
- */
-object ScalaAnonymousFunctionTarget {
+  * Test target for scala forwarder methods.
+  */
+object ScalaStaticForwarderTarget {
+
+  def foo(): Unit = {
+    nop() // assertFullyCovered()
+  }
 
   def main(args: Array[String]): Unit = {
-
-    exec(new Runnable {
-      override def run(): Unit = nop() // assertFullyCovered()
-    })
-
-    noexec(new Runnable {
-      override def run(): Unit = nop() // assertNotCovered()
-    })
-
+    ScalaStaticForwarderTarget.foo()
+    new ScalaStaticForwarderTarget
   }
+
+}
+
+class ScalaStaticForwarderTarget {
 
 }
