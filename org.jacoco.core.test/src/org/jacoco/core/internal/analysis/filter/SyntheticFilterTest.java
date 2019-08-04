@@ -57,7 +57,9 @@ public class SyntheticFilterTest extends FilterTestBase {
 	}
 
 	@Test
-	public void should_not_filter_Scala_anonymous_functions() {
+	public void should_not_filter_scala_anonymous_functions() {
+		context.classAnnotations.add(ScalaFilter.SCALA_SIGNATURE_ANNOTATION);
+
 		final MethodNode m = new MethodNode(InstrSupport.ASM_API_VERSION,
 				Opcodes.ACC_SYNTHETIC, "$anonfun$main$1", "()V", null, null);
 		m.visitInsn(Opcodes.RETURN);

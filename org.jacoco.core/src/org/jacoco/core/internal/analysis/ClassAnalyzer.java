@@ -78,7 +78,9 @@ public class ClassAnalyzer extends ClassProbesVisitor
 		coverage.setSignature(stringPool.get(signature));
 		coverage.setSuperName(stringPool.get(superName));
 		coverage.setInterfaces(stringPool.get(interfaces));
-		classInterfaces.addAll(Arrays.asList(coverage.getInterfaceNames()));
+		if (coverage.getInterfaceNames() != null) {
+			classInterfaces.addAll(Arrays.asList(coverage.getInterfaceNames()));
+		}
 	}
 
 	@Override
@@ -127,7 +129,6 @@ public class ClassAnalyzer extends ClassProbesVisitor
 		mcc.calculate(mc);
 
 		if (mc.containsCode()) {
-			System.out.println(getClassName() + ":  " + name);
 			// Only consider methods that actually contain code
 			coverage.addMethod(mc);
 		}
