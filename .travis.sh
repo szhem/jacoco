@@ -96,7 +96,7 @@ case "$JDK" in
   fi
   ;;
 6 | 7 | 8 | 9)
-  mvn -V -B -e verify -Djdk.version=${JDK} -Dbytecode.version=${JDK} -Decj=${ECJ:-} --toolchains=./.travis/travis-toolchains.xml \
+  mvn -X -V -B -e verify -Djdk.version=${JDK} -Dbytecode.version=${JDK} -Decj=${ECJ:-} --toolchains=./.travis/travis-toolchains.xml \
     --settings=./.travis/settings.xml
   ;;
 10 | 11 | 12)
