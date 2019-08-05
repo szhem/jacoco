@@ -163,8 +163,9 @@ abstract class AbstractMatcher {
 	 * Returns first instruction preceding a given one that matches one of the
 	 * provided opcodes.
 	 */
+	@SuppressWarnings("unchecked")
 	final <T extends AbstractInsnNode> T backward(final Integer... opcodes) {
-		return backward(Arrays.asList(opcodes));
+		return (T) backward(Arrays.asList(opcodes));
 	}
 
 	/**
@@ -182,8 +183,9 @@ abstract class AbstractMatcher {
 	 * Returns first instruction following a given one that matches one of the
 	 * provided opcodes.
 	 */
+	@SuppressWarnings("unchecked")
 	final <T extends AbstractInsnNode> T forward(final Integer... opcodes) {
-		return forward(Arrays.asList(opcodes));
+		return (T) forward(Arrays.asList(opcodes));
 	}
 
 	/**
@@ -235,36 +237,40 @@ abstract class AbstractMatcher {
 	 * Returns first instruction preceding a given one that matches one of the
 	 * provided opcodes.
 	 */
+	@SuppressWarnings("unchecked")
 	static <T extends AbstractInsnNode> T backward(
 			final AbstractInsnNode cursor, final Integer... opcodes) {
-		return backward(cursor, new OpcodePredicate(opcodes));
+		return (T) backward(cursor, new OpcodePredicate(opcodes));
 	}
 
 	/**
 	 * Returns first instruction preceding a given one that matches one of the
 	 * provided opcodes.
 	 */
+	@SuppressWarnings("unchecked")
 	static <T extends AbstractInsnNode> T backward(
 			final AbstractInsnNode cursor, final Collection<Integer> opcodes) {
-		return backward(cursor, new OpcodePredicate(opcodes));
+		return (T) backward(cursor, new OpcodePredicate(opcodes));
 	}
 
 	/**
 	 * Returns first instruction following a given one that matches one of the
 	 * provided opcodes.
 	 */
+	@SuppressWarnings("unchecked")
 	static <T extends AbstractInsnNode> T forward(
 			final AbstractInsnNode cursor, final Integer... opcodes) {
-		return forward(cursor, new OpcodePredicate(opcodes));
+		return (T) forward(cursor, new OpcodePredicate(opcodes));
 	}
 
 	/**
 	 * Returns first instruction following a given one that matches one of the
 	 * provided opcodes.
 	 */
+	@SuppressWarnings("unchecked")
 	static <T extends AbstractInsnNode> T forward(
 			final AbstractInsnNode cursor, final Collection<Integer> opcodes) {
-		return forward(cursor, new OpcodePredicate(opcodes));
+		return (T) forward(cursor, new OpcodePredicate(opcodes));
 	}
 
 	/**
