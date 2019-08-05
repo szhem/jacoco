@@ -174,7 +174,8 @@ abstract class AbstractMatcher {
 	 */
 	final <T extends AbstractInsnNode> T backward(
 			final Collection<Integer> opcodes) {
-		T insn = backward(cursor, opcodes);
+		@SuppressWarnings("unchecked")
+		T insn = (T) backward(cursor, opcodes);
 		cursor = insn;
 		return insn;
 	}
@@ -194,7 +195,8 @@ abstract class AbstractMatcher {
 	 */
 	final <T extends AbstractInsnNode> T forward(
 			final Collection<Integer> opcodes) {
-		T insn = forward(cursor, opcodes);
+		@SuppressWarnings("unchecked")
+		T insn = (T) forward(cursor, opcodes);
 		cursor = insn;
 		return insn;
 	}
@@ -204,7 +206,8 @@ abstract class AbstractMatcher {
 	 * predicate.
 	 */
 	final <T extends AbstractInsnNode> T backward(final Predicate predicate) {
-		T insn = backward(cursor, predicate);
+		@SuppressWarnings("unchecked")
+		T insn = (T) backward(cursor, predicate);
 		cursor = insn;
 		return insn;
 	}
@@ -214,7 +217,8 @@ abstract class AbstractMatcher {
 	 * predicate.
 	 */
 	final <T extends AbstractInsnNode> T forward(final Predicate predicate) {
-		T insn = forward(cursor, predicate);
+		@SuppressWarnings("unchecked")
+		T insn = (T) forward(cursor, predicate);
 		cursor = insn;
 		return insn;
 	}
