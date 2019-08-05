@@ -282,7 +282,8 @@ public class ScalaLazyAccessorFilter extends ScalaFilter {
 
 			// exclude everything between monitorexit and aload
 			ranges.add(new InsnRange(cursor,
-					backward(lzyField, Opcodes.ALOAD).getPrevious()));
+					((AbstractInsnNode) backward(lzyField, Opcodes.ALOAD))
+							.getPrevious()));
 			cursor = forward(lzyField, RETURN_OPCODES);
 			if (cursor == null) {
 				return;
