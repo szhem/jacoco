@@ -25,10 +25,9 @@
   <name>JaCoCo :: Test :: Core :: Validation Scala</name>
 
   <properties>
-    <scala.compiler.jvmTarget>${maven.compiler.target}</scala.compiler.jvmTarget>
     <scala.210.version>2.10.7</scala.210.version>
     <scala.211.version>2.11.12</scala.211.version>
-    <scala.212.version>2.12.8</scala.212.version>
+    <scala.212.version>2.12.9</scala.212.version>
     <scala.213.version>2.13.0</scala.213.version>
   </properties>
 
@@ -37,7 +36,7 @@
       <dependency>
         <groupId>org.scala-lang</groupId>
         <artifactId>scala-compiler</artifactId>
-        <version>${scala.version}</version>
+        <version>${scala-lang.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -60,9 +59,6 @@
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
         <version>4.1.1</version>
-        <configuration>
-          <target>${scala.compiler.jvmTarget}</target>
-        </configuration>
         <executions>
           <execution>
             <id>compile</id>
@@ -75,32 +71,61 @@
       </plugin>
     </plugins>
   </build>
+  
   <profiles>
     <profile>
       <id>scala210</id>
+      <activation>
+        <property>
+          <!-- property is named after the project to prevent conflicts with
+           the standard scala.version property of scala-maven-plugin -->
+          <name>jacoco-scala.version</name>
+          <value>2.10</value>
+        </property>
+      </activation>
       <properties>
-        <scala.version>${scala.210.version}</scala.version>
+        <bytecode.version>6</bytecode.version>
+        <scala-lang.version>${scala.210.version}</scala-lang.version>
       </properties>
     </profile>
     <profile>
       <id>scala211</id>
+      <activation>
+        <property>
+          <name>jacoco-scala.version</name>
+          <value>2.11</value>
+        </property>
+      </activation>
       <properties>
-        <scala.version>${scala.211.version}</scala.version>
+        <bytecode.version>6</bytecode.version>
+        <scala-lang.version>${scala.211.version}</scala-lang.version>
       </properties>
     </profile>
     <profile>
       <id>scala212</id>
       <activation>
         <activeByDefault>true</activeByDefault>
+        <property>
+          <name>jacoco-scala.version</name>
+          <value>2.12</value>
+        </property>
       </activation>
       <properties>
-        <scala.version>${scala.212.version}</scala.version>
+        <bytecode.version>8</bytecode.version>
+        <scala-lang.version>${scala.212.version}</scala-lang.version>
       </properties>
     </profile>
     <profile>
       <id>scala213</id>
+      <activation>
+        <property>
+          <name>jacoco-scala.version</name>
+          <value>2.13</value>
+        </property>
+      </activation>
       <properties>
-        <scala.version>${scala.213.version}</scala.version>
+        <bytecode.version>8</bytecode.version>
+        <scala-lang.version>${scala.213.version}</scala-lang.version>
       </properties>
     </profile>
   </profiles>
